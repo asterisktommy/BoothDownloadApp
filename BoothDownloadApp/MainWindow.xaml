@@ -1,0 +1,105 @@
+﻿<Window x:Class="BoothDownloadApp.MainWindow"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        Title="Boothダウンロードアプリ" Height="600" Width="800">
+    <Grid>
+        <!-- 行定義：上部(自動), 中央(＊), 下部(自動) -->
+        <Grid.RowDefinitions>
+            <RowDefinition Height="Auto"/>
+            <RowDefinition Height="*"/>
+            <RowDefinition Height="Auto"/>
+        </Grid.RowDefinitions>
+
+        <!-- 上部：ヘッダーとJSON読み込みボタン -->
+        <DockPanel Grid.Row="0" Margin="10">
+            <TextBlock Text="Boothダウンロードアプリ" FontSize="20" FontWeight="Bold" DockPanel.Dock="Left" VerticalAlignment="Center"/>
+            <Button Content="📥 JSON 読み込み" Width="120" Margin="5" DockPanel.Dock="Right" Click="LoadJsonData"/>
+        </DockPanel>
+
+        <!-- 中央：フィルターとアイテム一覧 -->
+        <Grid Grid.Row="1" Margin="10">
+            <Grid.ColumnDefinitions>
+                <ColumnDefinition Width="200"/>
+                <ColumnDefinition Width="*"/>
+            </Grid.ColumnDefinitions>
+
+            <!-- フィルター領域 -->
+            <StackPanel Grid.Column="0" Margin="5">
+                <TextBlock Text="フィルター" FontWeight="Bold" Margin="0,0,0,10"/>
+                <CheckBox Content="タグ" Margin="0,0,0,5"/>
+                <CheckBox Content="未DLアイテム" Margin="0,0,0,5"/>
+                <CheckBox Content="更新あり" Margin="0,0,0,5"/>
+            </StackPanel>
+
+            <!-- アイテム一覧領域 -->
+            <ListView Grid.Column="1" Margin="5" ItemsSource="{Binding Items}" SelectionChanged="ListView_SelectionChanged">
+                <ListView.View>
+                    <GridView>
+                        <GridViewColumn Header="商品名" Width="200">
+                            <GridViewColumn.CellTemplate>
+                                <DataTemplate>
+                                    <StackPanel Orientation="Horizontal">
+                                        <!-- 商品単位のチェックボックス -->
+                                        <CheckBox IsChecked="{Binding IsSelected, Mode=TwoWay}" 
+                          VerticalAlignment="Center" Margin="0,0,5,0"/>
+                                        <TextBlock Text="{Binding ProductName}" VerticalAlignment="Center"/>
+                                    </StackPanel>
+                                </DataTemplate>
+                            </GridViewColumn.CellTemplate>
+                        </GridViewColumn>
+
+                        <GridViewColumn Header="ショップ名" Width="150" DisplayMemberBinding="{Binding ShopName}" />
+                        <GridViewColumn Header="サムネイル" Width="100">
+                            <GridViewColumn.CellTemplate>
+                                <DataTemplate>
+                                    <Image Source="{Binding Thumbnail}" Width="80" Height="80"/>
+                                </DataTemplate>
+                            </GridViewColumn.CellTemplate>
+                        </GridViewColumn>
+                        <GridViewColumn Header="ダウンロードファイル" Width="300">
+                            <GridViewColumn.CellTemplate>
+                                <DataTemplate>
+                                    <ItemsControl ItemsSource="{Binding Downloads}">
+                                        <ItemsControl.ItemTemplate>
+                                            <DataTemplate>
+                                                <StackPanel Orientation="Horizontal" Margin="0,2">
+                                                    <!-- チェックボックス -->
+                                                    <CheckBox IsChecked="{Binding IsSelected, Mode=TwoWay}" VerticalAlignment="Center"/>
+                                                    <!-- ファイル名表示 -->
+                                                    <TextBlock Text="{Binding FileName}" 
+                                                               Foreground="Blue" 
+                                                               Cursor="Hand" 
+                                                               Margin="5,0,0,0"
+                                                               VerticalAlignment="Center">
+                                                        <TextBlock.InputBindings>
+                                                            <MouseBinding Gesture="LeftClick"
+                                                                          Command="{Binding DataContext.OpenLinkCommand, RelativeSource={RelativeSource AncestorType=Window}}"
+                                                                          CommandParameter="{Binding DownloadLink}"/>
+                                                        </TextBlock.InputBindings>
+                                                    </TextBlock>
+                                                </StackPanel>
+                                            </DataTemplate>
+                                        </ItemsControl.ItemTemplate>
+                                    </ItemsControl>
+                                </DataTemplate>
+                            </GridViewColumn.CellTemplate>
+                        </GridViewColumn>
+                    </GridView>
+                </ListView.View>
+            </ListView>
+        </Grid>
+
+        <!-- 下部：ダウンロード操作 -->
+        <StackPanel Grid.Row="2" Orientation="Horizontal" VerticalAlignment="Center" Margin="10">
+            <TextBlock Text="💾 ダウンロード先フォルダ:" VerticalAlignment="Center"/>
+            <Button Content="📂選択" Width="80" Margin="5"/>
+            <Button Content="⬇️ ダウンロード開始" Width="120" Margin="5" Click="StartDownload"/>
+            <Button Content="⏸ 停止" Width="80" Margin="5" Click="StopDownload"/>
+            <Button Content="🔄 更新" Width="80" Margin="5"/>
+            <!-- 進捗バーを横幅いっぱいに配置 -->
+            <ProgressBar x:Name="DownloadProgress" Height="20" Margin="20,0,10,0" VerticalAlignment="Center"
+                         Minimum="0" Maximum="100" Width="200"
+                         Value="{Binding Progress, Mode=OneWay}"/>
+        </StackPanel>
+    </Grid>
+</Window>
