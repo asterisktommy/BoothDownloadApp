@@ -1,32 +1,35 @@
-﻿using BoothDownloadApp;
-using System.Data.SQLite;
-using System.IO;
-
-public class DatabaseManager
+﻿namespace BoothDownloadApp
 {
-    private string dbPath;
+    using System.Data.SQLite;
+    using System.IO;
+    using System.Collections.Generic;
 
-    public DatabaseManager(string dbPath)
+    public class DatabaseManager
     {
-        this.dbPath = dbPath;
-        if (!File.Exists(dbPath))
-        {
-            SQLiteConnection.CreateFile(dbPath);
-        }
-    }
+        private string _dbPath;
 
-    public void SaveHistory(List<DownloadItem> items)
-    {
-        using (var connection = new SQLiteConnection($"Data Source={dbPath};Version=3;"))
+        public DatabaseManager(string dbPath)
         {
-            connection.Open();
-            var command = new SQLiteCommand("CREATE TABLE IF NOT EXISTS History (Id INTEGER PRIMARY KEY, Name TEXT, URL TEXT);", connection);
-            command.ExecuteNonQuery();
-
-            foreach (var item in items)
+            this._dbPath = dbPath;
+            if (!File.Exists(dbPath))
             {
-                command = new SQLiteCommand($"INSERT INTO History (Name, URL) VALUES ('{item.Name}', '{item.URL}');", connection);
+                SQLiteConnection.CreateFile(dbPath);
+            }
+        }
+
+        public void SaveHistory(List<DownloadItem> items)
+        {
+            using (var connection = new SQLiteConnection($"Data Source={_dbPath};Version=3;"))
+            {
+                connection.Open();
+                var command = new SQLiteCommand("CREATE TABLE IF NOT EXISTS History (Id INTEGER PRIMARY KEY, Name TEXT, URL TEXT);", connection);
                 command.ExecuteNonQuery();
+
+                foreach (var item in items)
+                {
+                    command = new SQLiteCommand($"INSERT INTO History (Name, URL) VALUES ('{item.Name}', '{item.URL}');", connection);
+                    command.ExecuteNonQuery();
+                }
             }
         }
     }

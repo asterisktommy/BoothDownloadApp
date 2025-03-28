@@ -1,11 +1,10 @@
-﻿using System.Collections.Generic;
-using System.Linq;
-using BoothDownloadApp;
-
-public class FilterManager
+﻿namespace BoothDownloadApp
 {
-    public List<DownloadItem> ApplyFilters(List<DownloadItem> items, string filter)
+    public class FilterManager
     {
-        return items.Where(item => item.Name.Contains(filter)).ToList();
+        public static List<DownloadItem> ApplyFilters(List<DownloadItem> items, string filter)
+        {
+            return items.Where(item => item.Name.Contains(filter)).ToList();
+        }
     }
 }

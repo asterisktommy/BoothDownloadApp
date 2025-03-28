@@ -1,40 +1,38 @@
-﻿using System;
-using System.Collections.ObjectModel;
-using System.Threading.Tasks;
-
-namespace BoothDownloadApp
+﻿namespace BoothDownloadApp
 {
+    using System.Data.SQLite;
+    using System.IO;
+    using System.Collections.Generic;
+
     public class DownloadManager
     {
-        // フィールド名は _items として重複を回避
-        private readonly ObservableCollection<DownloadItem> _items;
-        private readonly Action<int> _updateProgress;
-        private bool _isDownloading = false;
+        private string dbPath;
+        private bool _isDownloading; // Remove explicit initialization
 
-        public DownloadManager(ObservableCollection<DownloadItem> items, Action<int> updateProgress)
+        public DownloadManager(string dbPath)
         {
-            _items = items;
-            _updateProgress = updateProgress;
-        }
-
-        public async Task StartDownloadAsync()
-        {
-            if (_isDownloading)
-                return;
-
-            _isDownloading = true;
-            // サンプルとして、0～100 の進捗を更新
-            for (int i = 0; i <= 100 && _isDownloading; i++)
+            this.dbPath = dbPath;
+            if (!File.Exists(dbPath))
             {
-                await Task.Delay(50);
-                _updateProgress(i);
+                SQLiteConnection.CreateFile(dbPath);
             }
-            _isDownloading = false;
+            _isDownloading = false; // Initialize in constructor
         }
 
-        public void StopDownload()
+        public void SaveHistory(List<DownloadItem> items)
         {
-            _isDownloading = false;
+            using (var connection = new SQLiteConnection($"Data Source={dbPath};Version=3;"))
+            {
+                connection.Open();
+                var command = new SQLiteCommand("CREATE TABLE IF NOT EXISTS History (Id INTEGER PRIMARY KEY, Name TEXT, URL TEXT);", connection);
+                command.ExecuteNonQuery();
+
+                foreach (var item in items)
+                {
+                    command = new SQLiteCommand($"INSERT INTO History (Name, URL) VALUES ('{item.Name}', '{item.URL}');", connection);
+                    command.ExecuteNonQuery();
+                }
+            }
         }
     }
 }

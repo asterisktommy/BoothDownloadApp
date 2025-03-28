@@ -1,20 +1,27 @@
-﻿using Microsoft.AspNetCore.Builder;
-using Microsoft.AspNetCore.Http;
-using Microsoft.Extensions.DependencyInjection;
-using System.Collections.ObjectModel;
+﻿using System.Collections.ObjectModel;
 using System.ComponentModel;
 using System.IO;
-using System.Linq;
 using System.Runtime.CompilerServices;
 using System.Text.Json;
 using System.Text.Json.Serialization;
-using System.Threading.Tasks;
 using System.Windows;
+using Microsoft.AspNetCore.Builder;
+using Microsoft.AspNetCore.Http;
+using Microsoft.Extensions.DependencyInjection;
+using MessageBox = System.Windows.MessageBox; // WPF の MessageBox を明示的に指定
+using System.Windows.Forms;
+using OpenFileDialog = Microsoft.Win32.OpenFileDialog;
+using Microsoft.WindowsAPICodePack.Dialogs;
+using System.Net.Http;
+
+
 
 namespace BoothDownloadApp
 {
     public partial class MainWindow : Window, INotifyPropertyChanged
     {
+        private static readonly JsonSerializerOptions JsonSerializerOptions = new JsonSerializerOptions { WriteIndented = true, PropertyNameCaseInsensitive = true };
+
         public ObservableCollection<BoothItem> Items { get; set; } = new ObservableCollection<BoothItem>();
 
         private int _progress;
@@ -40,7 +47,6 @@ namespace BoothDownloadApp
             DataContext = this;
             // 起動時に管理用JSONファイルから読み込み（なければ作成）
             LoadManagementData();
-            StartWebServer();
         }
 
         /// <summary>
@@ -52,17 +58,14 @@ namespace BoothDownloadApp
             if (!File.Exists(manageFilePath))
             {
                 var emptyLibrary = new BoothLibrary { Library = new List<BoothItem>() };
-                string defaultJson = JsonSerializer.Serialize(emptyLibrary, new JsonSerializerOptions { WriteIndented = true });
+                string defaultJson = JsonSerializer.Serialize(emptyLibrary, JsonSerializerOptions);
                 File.WriteAllText(manageFilePath, defaultJson);
             }
 
             try
             {
                 string json = File.ReadAllText(manageFilePath);
-                var boothLibrary = JsonSerializer.Deserialize<BoothLibrary>(json, new JsonSerializerOptions
-                {
-                    PropertyNameCaseInsensitive = true
-                });
+                var boothLibrary = JsonSerializer.Deserialize<BoothLibrary>(json, JsonSerializerOptions);
                 if (boothLibrary?.Library != null)
                 {
                     Items.Clear();
@@ -84,7 +87,7 @@ namespace BoothDownloadApp
         private void SaveManagementData()
         {
             var boothLibrary = new BoothLibrary { Library = Items.ToList() };
-            string json = JsonSerializer.Serialize(boothLibrary, new JsonSerializerOptions { WriteIndented = true });
+            string json = JsonSerializer.Serialize(boothLibrary, JsonSerializerOptions);
             File.WriteAllText(manageFilePath, json);
         }
 
@@ -94,55 +97,6 @@ namespace BoothDownloadApp
             base.OnClosing(e);
         }
 
-        private void StartWebServer()
-        {
-            var builder = WebApplication.CreateBuilder();
-            builder.Services.AddCors(options =>
-            {
-                options.AddPolicy("AllowAll", policy =>
-                {
-                    policy.AllowAnyOrigin()
-                          .AllowAnyMethod()
-                          .AllowAnyHeader();
-                });
-            });
-            var app = builder.Build();
-            app.UseCors("AllowAll");
-
-            app.MapPost("/api/booth", async (HttpContext context) =>
-            {
-                using var reader = new StreamReader(context.Request.Body);
-                var json = await reader.ReadToEndAsync();
-
-                try
-                {
-                    var boothLibrary = JsonSerializer.Deserialize<BoothLibrary>(json, new JsonSerializerOptions
-                    {
-                        PropertyNameCaseInsensitive = true
-                    });
-
-                    if (boothLibrary?.Library != null)
-                    {
-                        Application.Current.Dispatcher.Invoke(() =>
-                        {
-                            Items.Clear();
-                            foreach (var item in boothLibrary.Library)
-                            {
-                                Items.Add(item);
-                            }
-                        });
-                    }
-                    return Results.Json(new { message = "データ受信成功" });
-                }
-                catch (JsonException ex)
-                {
-                    return Results.Json(new { error = $"JSON パースエラー: {ex.Message}" }, statusCode: 400);
-                }
-            });
-
-            Task.Run(() => app.Run("http://localhost:5000"));
-        }
-
         private async void StartDownload(object sender, RoutedEventArgs e)
         {
             if (Items.Count == 0)
@@ -150,8 +104,56 @@ namespace BoothDownloadApp
                 MessageBox.Show("ダウンロードするアイテムがありません。", "エラー", MessageBoxButton.OK, MessageBoxImage.Warning);
                 return;
             }
-            MessageBox.Show("ダウンロード開始！（機能未実装）", "情報", MessageBoxButton.OK, MessageBoxImage.Information);
+
+            // 選択された商品を取得
+            var selectedItems = Items.Where(item => item.IsSelected || item.Downloads.Any(d => d.IsSelected)).ToList();
+
+            if (selectedItems.Count == 0)
+            {
+                MessageBox.Show("ダウンロードするアイテムを選択してください。", "エラー", MessageBoxButton.OK, MessageBoxImage.Warning);
+                return;
+            }
+
+            // ダウンロード処理の開始
+            Progress = 0;
+            int totalFiles = selectedItems.Sum(item => item.Downloads.Count(d => d.IsSelected));
+
+            using HttpClient httpClient = new HttpClient();
+            int downloadedFiles = 0;
+
+            foreach (var item in selectedItems)
+            {
+                string shopFolder = Path.Combine(DownloadFolderPath, item.ShopName);
+                string productFolder = Path.Combine(shopFolder, item.ProductName);
+
+                // フォルダを作成
+                Directory.CreateDirectory(productFolder);
+
+                foreach (var file in item.Downloads.Where(d => d.IsSelected))
+                {
+                    string filePath = Path.Combine(productFolder, file.FileName);
+
+                    try
+                    {
+                        using HttpResponseMessage response = await httpClient.GetAsync(file.DownloadLink);
+                        response.EnsureSuccessStatusCode();
+                        await using FileStream fs = new FileStream(filePath, FileMode.Create, FileAccess.Write, FileShare.None);
+                        await response.Content.CopyToAsync(fs);
+
+                        downloadedFiles++;
+                        Progress = (int)((double)downloadedFiles / totalFiles * 100);
+                    }
+                    catch (Exception ex)
+                    {
+                        MessageBox.Show($"ダウンロード失敗: {file.FileName}\n{ex.Message}", "エラー", MessageBoxButton.OK, MessageBoxImage.Error);
+                    }
+                }
+            }
+
+            MessageBox.Show("ダウンロードが完了しました！", "情報", MessageBoxButton.OK, MessageBoxImage.Information);
         }
+
+
 
         private void StopDownload(object sender, RoutedEventArgs e)
         {
@@ -178,10 +180,7 @@ namespace BoothDownloadApp
                 if (File.Exists(targetPath))
                 {
                     string json = File.ReadAllText(targetPath);
-                    var boothLibrary = JsonSerializer.Deserialize<BoothLibrary>(json, new JsonSerializerOptions
-                    {
-                        PropertyNameCaseInsensitive = true
-                    });
+                    var boothLibrary = JsonSerializer.Deserialize<BoothLibrary>(json, JsonSerializerOptions);
 
                     if (boothLibrary?.Library != null)
                     {
@@ -209,39 +208,75 @@ namespace BoothDownloadApp
 
         #region INotifyPropertyChanged 実装
         public event PropertyChangedEventHandler? PropertyChanged;
-        protected void OnPropertyChanged([CallerMemberName] string propertyName = null)
+        protected void OnPropertyChanged([CallerMemberName] string propertyName = null!)
         {
             PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(propertyName));
         }
+
         #endregion
 
         private void ListView_SelectionChanged(object sender, System.Windows.Controls.SelectionChangedEventArgs e)
         {
             // 必要に応じて選択変更時の処理を追加
         }
+
+        private string _downloadFolderPath = "C:\\BoothData"; // デフォルトフォルダ
+
+        public string DownloadFolderPath
+        {
+            get => _downloadFolderPath;
+            set
+            {
+                if (_downloadFolderPath != value)
+                {
+                    _downloadFolderPath = value;
+                    OnPropertyChanged();
+                }
+            }
+        }
+
+        /// <summary>
+        /// フォルダ選択ダイアログを開く
+        /// </summary>
+        private void SelectDownloadFolder(object sender, RoutedEventArgs e)
+        {
+            var dialog = new CommonOpenFileDialog
+            {
+                IsFolderPicker = true, // フォルダ選択モード
+                InitialDirectory = DownloadFolderPath, // 初期フォルダ
+                Title = "ダウンロードフォルダを選択してください"
+            };
+
+            if (dialog.ShowDialog() == CommonFileDialogResult.Ok)
+            {
+                DownloadFolderPath = dialog.FileName;
+            }
+        }
     }
 
     public class BoothLibrary
     {
         [JsonPropertyName("library")]
-        public List<BoothItem> Library { get; set; }
+        public List<BoothItem> Library { get; set; } = new List<BoothItem>();
     }
+
 
     public class BoothItem : INotifyPropertyChanged
     {
         private bool _isSelected;
+        private string _description = string.Empty; // Initialize _description to a non-null value
 
         [JsonPropertyName("productName")]
-        public string ProductName { get; set; }
+        public string ProductName { get; set; } = string.Empty;
 
         [JsonPropertyName("shopName")]
-        public string ShopName { get; set; }
+        public string ShopName { get; set; } = string.Empty;
 
         [JsonPropertyName("thumbnail")]
-        public string Thumbnail { get; set; }
+        public string Thumbnail { get; set; } = string.Empty;
 
         [JsonPropertyName("downloads")]
-        public List<DownloadInfo> Downloads { get; set; }
+        public List<DownloadInfo> Downloads { get; set; } = new List<DownloadInfo>();
 
         // 商品単位の選択状態
         public bool IsSelected
@@ -264,8 +299,9 @@ namespace BoothDownloadApp
             }
         }
 
-        public event PropertyChangedEventHandler PropertyChanged;
-        protected void OnPropertyChanged([CallerMemberName] string propertyName = null)
+        public event PropertyChangedEventHandler? PropertyChanged;
+
+        protected void OnPropertyChanged([CallerMemberName] string propertyName = null!)
         {
             PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(propertyName));
         }
@@ -274,13 +310,13 @@ namespace BoothDownloadApp
         public class DownloadInfo : INotifyPropertyChanged
         {
             private bool _isSelected;
-            private string _description;
+            private string _description = string.Empty; // Initialize _description to a non-null value
 
             [JsonPropertyName("fileName")]
-            public string FileName { get; set; }
+            public string FileName { get; set; } = string.Empty;
 
             [JsonPropertyName("downloadLink")]
-            public string DownloadLink { get; set; }
+            public string DownloadLink { get; set; } = string.Empty;
 
             [JsonPropertyName("description")]
             public string Description
@@ -309,11 +345,18 @@ namespace BoothDownloadApp
                 }
             }
 
-            public event PropertyChangedEventHandler PropertyChanged;
-            protected void OnPropertyChanged([CallerMemberName] string propertyName = null)
+            public event PropertyChangedEventHandler? PropertyChanged;
+
+            protected void OnPropertyChanged([CallerMemberName] string propertyName = null!)
             {
                 PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(propertyName));
             }
         }
+
+        
+
+        
     }
+
+
 }

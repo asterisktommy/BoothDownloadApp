@@ -14,6 +14,9 @@ namespace BoothDownloadApp
         // JSONファイルのパス（例として固定パス）
         private readonly string editDataFilePath = Path.Combine(System.AppDomain.CurrentDomain.BaseDirectory, "editDownloadData.json");
 
+        // キャッシュされたJsonSerializerOptionsインスタンス
+        private static readonly JsonSerializerOptions jsonSerializerOptions = new JsonSerializerOptions { WriteIndented = true };
+
         public EditDownloadDataWindow(ObservableCollection<DownloadInfo> items)
         {
             InitializeComponent();
@@ -40,7 +43,7 @@ namespace BoothDownloadApp
         {
             try
             {
-                string json = JsonSerializer.Serialize(DownloadItems, new JsonSerializerOptions { WriteIndented = true });
+                string json = JsonSerializer.Serialize(DownloadItems, jsonSerializerOptions);
                 File.WriteAllText(editDataFilePath, json);
                 MessageBox.Show("保存しました！", "情報", MessageBoxButton.OK, MessageBoxImage.Information);
                 DialogResult = true;

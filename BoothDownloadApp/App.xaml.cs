@@ -1,11 +1,14 @@
 ﻿using System.Windows;
 
-public partial class App : Application
+namespace BoothDownloadApp
 {
-    protected override void OnStartup(StartupEventArgs e)
+    public partial class App : Application
     {
-        base.OnStartup(e);
-        // ダークモードのデフォルト設定など
-        ThemeManager.ToggleDarkMode(false);
+        protected override void OnStartup(StartupEventArgs e)
+        {
+            base.OnStartup(e);
+            // ダークモードのデフォルト設定など
+            ThemeManager.ToggleDarkMode(false);
+        }
     }
 }

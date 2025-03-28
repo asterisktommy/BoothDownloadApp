@@ -1,17 +1,20 @@
 ﻿using System.Windows;
 using System.Windows.Media;
 
-public class ThemeManager
+namespace BoothDownloadApp
 {
-    public static void ToggleDarkMode(bool isDarkMode)
+    public class ThemeManager
     {
-        if (isDarkMode)
+        public static void ToggleDarkMode(bool isDarkMode)
         {
-            Application.Current.Resources["WindowBackgroundBrush"] = new SolidColorBrush(Colors.Black);
-        }
-        else
-        {
-            Application.Current.Resources["WindowBackgroundBrush"] = new SolidColorBrush(Colors.White);
+            if (isDarkMode)
+            {
+                Application.Current.Resources["WindowBackgroundBrush"] = new SolidColorBrush(Colors.Black);
+            }
+            else
+            {
+                Application.Current.Resources["WindowBackgroundBrush"] = new SolidColorBrush(Colors.White);
+            }
         }
     }
 }

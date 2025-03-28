@@ -91,8 +91,10 @@
 
         <!-- 下部：ダウンロード操作 -->
         <StackPanel Grid.Row="2" Orientation="Horizontal" VerticalAlignment="Center" Margin="10">
-            <TextBlock Text="💾 ダウンロード先フォルダ:" VerticalAlignment="Center"/>
-            <Button Content="📂選択" Width="80" Margin="5"/>
+            <TextBlock Text="💾 ダウンロード先:" VerticalAlignment="Center"/>
+            <TextBlock Text="{Binding DownloadFolderPath}" Width="200" TextWrapping="Wrap"/>
+            <Button Content="📂選択" Width="80" Margin="5" Click="SelectDownloadFolder"/>
+
             <Button Content="⬇️ ダウンロード開始" Width="120" Margin="5" Click="StartDownload"/>
             <Button Content="⏸ 停止" Width="80" Margin="5" Click="StopDownload"/>
             <Button Content="🔄 更新" Width="80" Margin="5"/>
