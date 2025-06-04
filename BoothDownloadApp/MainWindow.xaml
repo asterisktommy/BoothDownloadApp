@@ -2,6 +2,9 @@
         xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
         Title="Boothダウンロードアプリ" Height="600" Width="800">
+    <Window.Resources>
+        <BooleanToVisibilityConverter x:Key="BoolToVisibilityConverter"/>
+    </Window.Resources>
     <Grid>
         <!-- 行定義：上部(自動), 中央(＊), 下部(自動) -->
         <Grid.RowDefinitions>
@@ -56,6 +59,14 @@
                                 </DataTemplate>
                             </GridViewColumn.CellTemplate>
                         </GridViewColumn>
+                        <GridViewColumn Header="状態" Width="60">
+                            <GridViewColumn.CellTemplate>
+                                <DataTemplate>
+                                    <TextBlock Text="✓" Foreground="Green" HorizontalAlignment="Center"
+                                               Visibility="{Binding IsDownloaded, Converter={StaticResource BoolToVisibilityConverter}}"/>
+                                </DataTemplate>
+                            </GridViewColumn.CellTemplate>
+                        </GridViewColumn>
                         <GridViewColumn Header="ダウンロードファイル" Width="300">
                             <GridViewColumn.CellTemplate>
                                 <DataTemplate>
@@ -66,9 +77,9 @@
                                                     <!-- チェックボックス -->
                                                     <CheckBox IsChecked="{Binding IsSelected, Mode=TwoWay}" VerticalAlignment="Center"/>
                                                     <!-- ファイル名表示 -->
-                                                    <TextBlock Text="{Binding FileName}" 
-                                                               Foreground="Blue" 
-                                                               Cursor="Hand" 
+                                                    <TextBlock Text="{Binding FileName}"
+                                                               Foreground="Blue"
+                                                               Cursor="Hand"
                                                                Margin="5,0,0,0"
                                                                VerticalAlignment="Center">
                                                         <TextBlock.InputBindings>
@@ -77,6 +88,8 @@
                                                                           CommandParameter="{Binding DownloadLink}"/>
                                                         </TextBlock.InputBindings>
                                                     </TextBlock>
+                                                    <TextBlock Text="済" Foreground="Green" Margin="5,0,0,0" VerticalAlignment="Center"
+                                                               Visibility="{Binding IsDownloaded, Converter={StaticResource BoolToVisibilityConverter}}" />
                                                 </StackPanel>
                                             </DataTemplate>
                                         </ItemsControl.ItemTemplate>
@@ -94,6 +107,7 @@
             <TextBlock Text="💾 ダウンロード先:" VerticalAlignment="Center"/>
             <TextBlock Text="{Binding DownloadFolderPath}" Width="200" TextWrapping="Wrap"/>
             <Button Content="📂選択" Width="80" Margin="5" Click="SelectDownloadFolder"/>
+            <Button Content="📂開く" Width="80" Margin="5" Click="OpenDownloadFolder"/>
 
             <Button Content="⬇️ ダウンロード開始" Width="120" Margin="5" Click="StartDownload"/>
             <Button Content="⏸ 停止" Width="80" Margin="5" Click="StopDownload"/>
