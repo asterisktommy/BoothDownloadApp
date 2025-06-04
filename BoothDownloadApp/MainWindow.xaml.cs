@@ -13,6 +13,8 @@ using System.Net.Http;
 using System.Windows.Input;
 using System.Diagnostics;
 using System.Threading;
+using System.Windows.Data;
+using System.Windows.Controls;
 
 
 
@@ -23,6 +25,38 @@ namespace BoothDownloadApp
         private static readonly JsonSerializerOptions JsonSerializerOptions = new JsonSerializerOptions { WriteIndented = true, PropertyNameCaseInsensitive = true };
 
         public ObservableCollection<BoothItem> Items { get; set; } = new ObservableCollection<BoothItem>();
+
+        private readonly DatabaseManager _dbManager = new DatabaseManager(Path.Combine(System.AppDomain.CurrentDomain.BaseDirectory, "download_history.db"));
+
+        private bool _isDarkMode;
+        public bool IsDarkMode
+        {
+            get => _isDarkMode;
+            set
+            {
+                if (_isDarkMode != value)
+                {
+                    _isDarkMode = value;
+                    OnPropertyChanged();
+                    ThemeManager.ToggleDarkMode(value);
+                }
+            }
+        }
+
+        private bool _showOnlyNotDownloaded;
+        public bool ShowOnlyNotDownloaded
+        {
+            get => _showOnlyNotDownloaded;
+            set
+            {
+                if (_showOnlyNotDownloaded != value)
+                {
+                    _showOnlyNotDownloaded = value;
+                    OnPropertyChanged();
+                    ApplyFilters();
+                }
+            }
+        }
 
         private int _progress;
         public int Progress
@@ -80,6 +114,7 @@ namespace BoothDownloadApp
                     {
                         Items.Add(item);
                     }
+                    UpdateDownloadStatus();
                 }
             }
             catch (JsonException ex)
@@ -131,6 +166,8 @@ namespace BoothDownloadApp
             Progress = 0;
             int totalFiles = selectedItems.Sum(item => item.Downloads.Count(d => d.IsSelected));
 
+            UpdateDownloadStatus();
+
             using HttpClient httpClient = new HttpClient();
             int downloadedFiles = 0;
             _cts = new CancellationTokenSource();
@@ -158,6 +195,8 @@ namespace BoothDownloadApp
 
                         downloadedFiles++;
                         Progress = (int)((double)downloadedFiles / totalFiles * 100);
+                        file.IsDownloaded = true;
+                        _dbManager.SaveHistoryItem($"{item.ProductName}/{file.FileName}", file.DownloadLink);
                     }
                     catch (OperationCanceledException)
                     {
@@ -169,6 +208,7 @@ namespace BoothDownloadApp
                         MessageBox.Show($"ダウンロード失敗: {file.FileName}\n{ex.Message}", "エラー", MessageBoxButton.OK, MessageBoxImage.Error);
                     }
                 }
+                item.IsDownloaded = item.Downloads.All(d => d.IsDownloaded);
             }
             _isDownloading = false;
             _cts = null;
@@ -214,6 +254,7 @@ namespace BoothDownloadApp
                         {
                             Items.Add(item);
                         }
+                        UpdateDownloadStatus();
                     }
                     MessageBox.Show("JSON データを読み込みました！", "情報", MessageBoxButton.OK, MessageBoxImage.Information);
 
@@ -256,6 +297,7 @@ namespace BoothDownloadApp
                 {
                     _downloadFolderPath = value;
                     OnPropertyChanged();
+                    UpdateDownloadStatus();
                 }
             }
         }
@@ -278,6 +320,62 @@ namespace BoothDownloadApp
             }
         }
 
+        /// <summary>
+        /// ダウンロードフォルダをエクスプローラーで開く
+        /// </summary>
+        private void OpenDownloadFolder(object sender, RoutedEventArgs e)
+        {
+            try
+            {
+                if (Directory.Exists(DownloadFolderPath))
+                {
+                    Process.Start(new ProcessStartInfo("explorer", DownloadFolderPath) { UseShellExecute = true });
+                }
+                else
+                {
+                    MessageBox.Show("フォルダが存在しません。", "エラー", MessageBoxButton.OK, MessageBoxImage.Error);
+                }
+            }
+            catch (Exception ex)
+            {
+                MessageBox.Show($"フォルダを開けませんでした: {ex.Message}", "エラー", MessageBoxButton.OK, MessageBoxImage.Error);
+            }
+        }
+
+        /// <summary>
+        /// 全アイテムのダウンロード済み状態を更新する
+        /// </summary>
+        private void UpdateDownloadStatus()
+        {
+            foreach (var item in Items)
+            {
+                foreach (var download in item.Downloads)
+                {
+                    string path = Path.Combine(DownloadFolderPath, item.ShopName, item.ProductName, download.FileName);
+                    download.IsDownloaded = File.Exists(path);
+                }
+                item.IsDownloaded = item.Downloads.All(d => d.IsDownloaded);
+            }
+            ApplyFilters();
+        }
+
+        private void ApplyFilters()
+        {
+            var view = (CollectionView)CollectionViewSource.GetDefaultView(Items);
+            view.Filter = obj =>
+            {
+                if (obj is BoothItem item)
+                {
+                    if (ShowOnlyNotDownloaded && item.IsDownloaded)
+                    {
+                        return false;
+                    }
+                }
+                return true;
+            };
+            view.Refresh();
+        }
+
         private void OpenLink(object? parameter)
         {
             if (parameter is string url && !string.IsNullOrWhiteSpace(url))
@@ -291,6 +389,11 @@ namespace BoothDownloadApp
                     MessageBox.Show($"リンクを開けませんでした: {ex.Message}", "エラー", MessageBoxButton.OK, MessageBoxImage.Error);
                 }
             }
+        }
+
+        private void FilterChanged(object sender, RoutedEventArgs e)
+        {
+            ApplyFilters();
         }
 
         private class RelayCommand : ICommand
@@ -321,6 +424,7 @@ namespace BoothDownloadApp
     {
         private bool _isSelected;
         private string _description = string.Empty; // Initialize _description to a non-null value
+        private bool _isDownloaded;
 
         [JsonPropertyName("productName")]
         public string ProductName { get; set; } = string.Empty;
@@ -355,6 +459,20 @@ namespace BoothDownloadApp
             }
         }
 
+        [JsonIgnore]
+        public bool IsDownloaded
+        {
+            get => _isDownloaded;
+            set
+            {
+                if (_isDownloaded != value)
+                {
+                    _isDownloaded = value;
+                    OnPropertyChanged();
+                }
+            }
+        }
+
         public event PropertyChangedEventHandler? PropertyChanged;
 
         protected void OnPropertyChanged([CallerMemberName] string propertyName = null!)
@@ -367,6 +485,7 @@ namespace BoothDownloadApp
         {
             private bool _isSelected;
             private string _description = string.Empty; // Initialize _description to a non-null value
+            private bool _isDownloaded;
 
             [JsonPropertyName("fileName")]
             public string FileName { get; set; } = string.Empty;
@@ -396,6 +515,20 @@ namespace BoothDownloadApp
                     if (_isSelected != value)
                     {
                         _isSelected = value;
+                        OnPropertyChanged();
+                    }
+                }
+            }
+
+            [JsonIgnore]
+            public bool IsDownloaded
+            {
+                get => _isDownloaded;
+                set
+                {
+                    if (_isDownloaded != value)
+                    {
+                        _isDownloaded = value;
                         OnPropertyChanged();
                     }
                 }

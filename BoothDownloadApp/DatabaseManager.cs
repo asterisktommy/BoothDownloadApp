@@ -34,5 +34,17 @@
                 }
             }
         }
+
+        public void SaveHistoryItem(string name, string url)
+        {
+            using var connection = new SQLiteConnection($"Data Source={_dbPath};Version=3;");
+            connection.Open();
+            using var command = new SQLiteCommand("CREATE TABLE IF NOT EXISTS History (Id INTEGER PRIMARY KEY, Name TEXT, URL TEXT);", connection);
+            command.ExecuteNonQuery();
+            using var insert = new SQLiteCommand("INSERT INTO History (Name, URL) VALUES (@name, @url);", connection);
+            insert.Parameters.AddWithValue("@name", name);
+            insert.Parameters.AddWithValue("@url", url);
+            insert.ExecuteNonQuery();
+        }
     }
 }
