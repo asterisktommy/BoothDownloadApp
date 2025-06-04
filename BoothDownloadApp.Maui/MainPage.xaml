@@ -1,0 +1,20 @@
+<?xml version="1.0" encoding="utf-8" ?>
+<ContentPage xmlns="http://schemas.microsoft.com/dotnet/2021/maui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
+             x:Class="BoothDownloadApp.Maui.MainPage"
+             Title="Booth Downloader">
+    <StackLayout Padding="20" Spacing="10">
+        <Button Text="Load JSON" Command="{Binding LoadCommand}" />
+        <CollectionView ItemsSource="{Binding Items}" HeightRequest="300">
+            <CollectionView.ItemTemplate>
+                <DataTemplate>
+                    <StackLayout Orientation="Horizontal" Padding="5">
+                        <CheckBox IsChecked="{Binding IsSelected}" />
+                        <Label Text="{Binding ProductName}" VerticalOptions="Center" />
+                    </StackLayout>
+                </DataTemplate>
+            </CollectionView.ItemTemplate>
+        </CollectionView>
+        <Button Text="Start Download" Command="{Binding DownloadCommand}" />
+    </StackLayout>
+</ContentPage>
