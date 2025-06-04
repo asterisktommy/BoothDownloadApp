@@ -196,7 +196,7 @@ namespace BoothDownloadApp
                         downloadedFiles++;
                         Progress = (int)((double)downloadedFiles / totalFiles * 100);
                         file.IsDownloaded = true;
-                        _dbManager.SaveHistoryItem($"{item.ProductName}/{file.FileName}", file.DownloadLink);
+
                     }
                     catch (OperationCanceledException)
                     {
@@ -356,24 +356,7 @@ namespace BoothDownloadApp
                 }
                 item.IsDownloaded = item.Downloads.All(d => d.IsDownloaded);
             }
-            ApplyFilters();
-        }
 
-        private void ApplyFilters()
-        {
-            var view = (CollectionView)CollectionViewSource.GetDefaultView(Items);
-            view.Filter = obj =>
-            {
-                if (obj is BoothItem item)
-                {
-                    if (ShowOnlyNotDownloaded && item.IsDownloaded)
-                    {
-                        return false;
-                    }
-                }
-                return true;
-            };
-            view.Refresh();
         }
 
         private void OpenLink(object? parameter)
