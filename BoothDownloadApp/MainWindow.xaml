@@ -29,9 +29,11 @@
             <!-- フィルター領域 -->
             <StackPanel Grid.Column="0" Margin="5">
                 <TextBlock Text="フィルター" FontWeight="Bold" Margin="0,0,0,10"/>
-                <CheckBox Content="タグ" Margin="0,0,0,5"/>
-                <CheckBox Content="未DLアイテム" Margin="0,0,0,5"/>
-                <CheckBox Content="更新あり" Margin="0,0,0,5"/>
+                <CheckBox Content="タグ" Margin="0,0,0,5" IsEnabled="False"/>
+                <CheckBox Content="未DLアイテム" Margin="0,0,0,5"
+                          IsChecked="{Binding ShowOnlyNotDownloaded}"
+                          Checked="FilterChanged" Unchecked="FilterChanged"/>
+                <CheckBox Content="更新あり" Margin="0,0,0,5" IsEnabled="False"/>
             </StackPanel>
 
             <!-- アイテム一覧領域 -->
@@ -112,6 +114,7 @@
             <Button Content="⬇️ ダウンロード開始" Width="120" Margin="5" Click="StartDownload"/>
             <Button Content="⏸ 停止" Width="80" Margin="5" Click="StopDownload"/>
             <Button Content="🔄 更新" Width="80" Margin="5"/>
+            <CheckBox Content="🌙 ダークモード" Margin="5" IsChecked="{Binding IsDarkMode}"/>
             <!-- 進捗バーを横幅いっぱいに配置 -->
             <ProgressBar x:Name="DownloadProgress" Height="20" Margin="20,0,10,0" VerticalAlignment="Center"
                          Minimum="0" Maximum="100" Width="200"

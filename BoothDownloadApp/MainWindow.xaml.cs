@@ -13,6 +13,8 @@ using System.Net.Http;
 using System.Windows.Input;
 using System.Diagnostics;
 using System.Threading;
+using System.Windows.Data;
+using System.Windows.Controls;
 
 
 
@@ -23,6 +25,38 @@ namespace BoothDownloadApp
         private static readonly JsonSerializerOptions JsonSerializerOptions = new JsonSerializerOptions { WriteIndented = true, PropertyNameCaseInsensitive = true };
 
         public ObservableCollection<BoothItem> Items { get; set; } = new ObservableCollection<BoothItem>();
+
+        private readonly DatabaseManager _dbManager = new DatabaseManager(Path.Combine(System.AppDomain.CurrentDomain.BaseDirectory, "download_history.db"));
+
+        private bool _isDarkMode;
+        public bool IsDarkMode
+        {
+            get => _isDarkMode;
+            set
+            {
+                if (_isDarkMode != value)
+                {
+                    _isDarkMode = value;
+                    OnPropertyChanged();
+                    ThemeManager.ToggleDarkMode(value);
+                }
+            }
+        }
+
+        private bool _showOnlyNotDownloaded;
+        public bool ShowOnlyNotDownloaded
+        {
+            get => _showOnlyNotDownloaded;
+            set
+            {
+                if (_showOnlyNotDownloaded != value)
+                {
+                    _showOnlyNotDownloaded = value;
+                    OnPropertyChanged();
+                    ApplyFilters();
+                }
+            }
+        }
 
         private int _progress;
         public int Progress
@@ -162,6 +196,7 @@ namespace BoothDownloadApp
                         downloadedFiles++;
                         Progress = (int)((double)downloadedFiles / totalFiles * 100);
                         file.IsDownloaded = true;
+
                     }
                     catch (OperationCanceledException)
                     {
@@ -321,6 +356,7 @@ namespace BoothDownloadApp
                 }
                 item.IsDownloaded = item.Downloads.All(d => d.IsDownloaded);
             }
+
         }
 
         private void OpenLink(object? parameter)
@@ -336,6 +372,11 @@ namespace BoothDownloadApp
                     MessageBox.Show($"リンクを開けませんでした: {ex.Message}", "エラー", MessageBoxButton.OK, MessageBoxImage.Error);
                 }
             }
+        }
+
+        private void FilterChanged(object sender, RoutedEventArgs e)
+        {
+            ApplyFilters();
         }
 
         private class RelayCommand : ICommand
