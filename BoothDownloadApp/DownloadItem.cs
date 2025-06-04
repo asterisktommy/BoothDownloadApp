@@ -1,4 +1,5 @@
-﻿namespace BoothDownloadApp
+using System;
+namespace BoothDownloadApp
 {
     public class DownloadItem
     {
