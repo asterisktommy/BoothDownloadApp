@@ -1,4 +1,4 @@
-﻿using System.Collections.ObjectModel;
+using System.Collections.ObjectModel;
 using System.ComponentModel;
 using System.IO;
 using System.Runtime.CompilerServices;
@@ -25,6 +25,7 @@ namespace BoothDownloadApp
         private static readonly JsonSerializerOptions JsonSerializerOptions = new JsonSerializerOptions { WriteIndented = true, PropertyNameCaseInsensitive = true };
 
         public ObservableCollection<BoothItem> Items { get; set; } = new ObservableCollection<BoothItem>();
+        private ICollectionView ItemsView => CollectionViewSource.GetDefaultView(Items);
 
         private readonly DatabaseManager _dbManager = new DatabaseManager(Path.Combine(System.AppDomain.CurrentDomain.BaseDirectory, "download_history.db"));
 
@@ -115,6 +116,7 @@ namespace BoothDownloadApp
                         Items.Add(item);
                     }
                     UpdateDownloadStatus();
+                    ApplyFilters();
                 }
             }
             catch (JsonException ex)
@@ -255,6 +257,7 @@ namespace BoothDownloadApp
                             Items.Add(item);
                         }
                         UpdateDownloadStatus();
+                        ApplyFilters();
                     }
                     MessageBox.Show("JSON データを読み込みました！", "情報", MessageBoxButton.OK, MessageBoxImage.Information);
 
@@ -356,7 +359,24 @@ namespace BoothDownloadApp
                 }
                 item.IsDownloaded = item.Downloads.All(d => d.IsDownloaded);
             }
+            ApplyFilters();
+        }
 
+        private void ApplyFilters()
+        {
+            if (ItemsView == null) return;
+
+            ItemsView.Filter = obj =>
+            {
+                if (obj is not BoothItem item) return false;
+                if (ShowOnlyNotDownloaded && item.IsDownloaded)
+                {
+                    return false;
+                }
+                return true;
+            };
+
+            ItemsView.Refresh();
         }
 
         private void OpenLink(object? parameter)
