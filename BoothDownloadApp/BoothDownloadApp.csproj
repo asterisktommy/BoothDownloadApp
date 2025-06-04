@@ -27,4 +27,8 @@
     <FrameworkReference Include="Microsoft.AspNetCore.App" />
   </ItemGroup>
 
+  <ItemGroup>
+    <ProjectReference Include="..\BoothDownloadApp.Core\BoothDownloadApp.Core.csproj" />
+  </ItemGroup>
+
 </Project>
