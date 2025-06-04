@@ -5,14 +5,14 @@ using System.Runtime.CompilerServices;
 using System.Text.Json;
 using System.Text.Json.Serialization;
 using System.Windows;
-using Microsoft.AspNetCore.Builder;
-using Microsoft.AspNetCore.Http;
-using Microsoft.Extensions.DependencyInjection;
 using MessageBox = System.Windows.MessageBox; // WPF の MessageBox を明示的に指定
 using System.Windows.Forms;
 using OpenFileDialog = Microsoft.Win32.OpenFileDialog;
 using Microsoft.WindowsAPICodePack.Dialogs;
 using System.Net.Http;
+using System.Windows.Input;
+using System.Diagnostics;
+using System.Threading;
 
 
 
@@ -38,6 +38,11 @@ namespace BoothDownloadApp
             }
         }
 
+        private CancellationTokenSource? _cts;
+        private bool _isDownloading;
+
+        public ICommand OpenLinkCommand { get; }
+
         // 管理用JSONファイルのパス（例：アプリケーションディレクトリ直下）
         private readonly string manageFilePath = Path.Combine(System.AppDomain.CurrentDomain.BaseDirectory, "booth_manage.json");
 
@@ -45,6 +50,8 @@ namespace BoothDownloadApp
         {
             InitializeComponent();
             DataContext = this;
+            OpenLinkCommand = new RelayCommand(OpenLink);
+            _isDownloading = false;
             // 起動時に管理用JSONファイルから読み込み（なければ作成）
             LoadManagementData();
         }
@@ -99,6 +106,12 @@ namespace BoothDownloadApp
 
         private async void StartDownload(object sender, RoutedEventArgs e)
         {
+            if (_isDownloading)
+            {
+                MessageBox.Show("既にダウンロード処理が実行されています。", "情報", MessageBoxButton.OK, MessageBoxImage.Information);
+                return;
+            }
+
             if (Items.Count == 0)
             {
                 MessageBox.Show("ダウンロードするアイテムがありません。", "エラー", MessageBoxButton.OK, MessageBoxImage.Warning);
@@ -120,6 +133,9 @@ namespace BoothDownloadApp
 
             using HttpClient httpClient = new HttpClient();
             int downloadedFiles = 0;
+            _cts = new CancellationTokenSource();
+            var token = _cts.Token;
+            _isDownloading = true;
 
             foreach (var item in selectedItems)
             {
@@ -135,13 +151,18 @@ namespace BoothDownloadApp
 
                     try
                     {
-                        using HttpResponseMessage response = await httpClient.GetAsync(file.DownloadLink);
+                        using HttpResponseMessage response = await httpClient.GetAsync(file.DownloadLink, token);
                         response.EnsureSuccessStatusCode();
                         await using FileStream fs = new FileStream(filePath, FileMode.Create, FileAccess.Write, FileShare.None);
-                        await response.Content.CopyToAsync(fs);
+                        await response.Content.CopyToAsync(fs, token);
 
                         downloadedFiles++;
                         Progress = (int)((double)downloadedFiles / totalFiles * 100);
+                    }
+                    catch (OperationCanceledException)
+                    {
+                        MessageBox.Show("ダウンロードをキャンセルしました。", "情報", MessageBoxButton.OK, MessageBoxImage.Information);
+                        return;
                     }
                     catch (Exception ex)
                     {
@@ -149,7 +170,8 @@ namespace BoothDownloadApp
                     }
                 }
             }
-
+            _isDownloading = false;
+            _cts = null;
             MessageBox.Show("ダウンロードが完了しました！", "情報", MessageBoxButton.OK, MessageBoxImage.Information);
         }
 
@@ -157,7 +179,10 @@ namespace BoothDownloadApp
 
         private void StopDownload(object sender, RoutedEventArgs e)
         {
-            MessageBox.Show("ダウンロード停止！（機能未実装）", "情報", MessageBoxButton.OK, MessageBoxImage.Information);
+            if (_isDownloading && _cts != null)
+            {
+                _cts.Cancel();
+            }
         }
 
         private void LoadJsonData(object sender, RoutedEventArgs e)
@@ -251,6 +276,37 @@ namespace BoothDownloadApp
             {
                 DownloadFolderPath = dialog.FileName;
             }
+        }
+
+        private void OpenLink(object? parameter)
+        {
+            if (parameter is string url && !string.IsNullOrWhiteSpace(url))
+            {
+                try
+                {
+                    Process.Start(new ProcessStartInfo(url) { UseShellExecute = true });
+                }
+                catch (Exception ex)
+                {
+                    MessageBox.Show($"リンクを開けませんでした: {ex.Message}", "エラー", MessageBoxButton.OK, MessageBoxImage.Error);
+                }
+            }
+        }
+
+        private class RelayCommand : ICommand
+        {
+            private readonly Action<object?> _execute;
+            private readonly Predicate<object?>? _canExecute;
+
+            public RelayCommand(Action<object?> execute, Predicate<object?>? canExecute = null)
+            {
+                _execute = execute;
+                _canExecute = canExecute;
+            }
+
+            public bool CanExecute(object? parameter) => _canExecute?.Invoke(parameter) ?? true;
+            public void Execute(object? parameter) => _execute(parameter);
+            public event EventHandler? CanExecuteChanged { add { } remove { } }
         }
     }
 
