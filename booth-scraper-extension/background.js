@@ -6,18 +6,40 @@ chrome.action.onClicked.addListener((tab) => {
 
   const allowedPages = [
     'https://accounts.booth.pm/library',
-    'https://booth.pm/library'
+    'https://booth.pm/library',
+    'https://accounts.booth.pm/library/gifts',
+    'https://booth.pm/library/gifts'
   ];
 
   if (allowedPages.some(p => tab.url.startsWith(p))) {
-    chrome.tabs.sendMessage(tab.id, { action: 'start-scrape' }, () => {
+    const start = () =>
+      chrome.tabs.sendMessage(tab.id, { action: 'start-scrape' }, () => {
+        if (chrome.runtime.lastError) {
+          chrome.notifications.create({
+            type: 'basic',
+            iconUrl: transparentIcon,
+            title: 'Booth Scraper Error',
+            message: 'Could not start scraping. Try reloading the page.'
+          });
+        }
+      });
+
+    chrome.tabs.sendMessage(tab.id, { action: 'ping' }, (res) => {
       if (chrome.runtime.lastError) {
-        chrome.notifications.create({
-          type: 'basic',
-          iconUrl: transparentIcon,
-          title: 'Booth Scraper Error',
-          message: 'Please open your Booth library page after logging in.'
+        chrome.scripting.executeScript({ target: { tabId: tab.id }, files: ['content.js'] }, () => {
+          if (chrome.runtime.lastError) {
+            chrome.notifications.create({
+              type: 'basic',
+              iconUrl: transparentIcon,
+              title: 'Booth Scraper Error',
+              message: 'Please open your Booth library page after logging in.'
+            });
+          } else {
+            start();
+          }
         });
+      } else {
+        start();
       }
     });
   } else {
