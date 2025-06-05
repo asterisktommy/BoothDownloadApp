@@ -1,6 +1,16 @@
 async function fetchTags(url) {
   try {
-    const html = await fetch(url, { credentials: 'include' }).then(r => r.text());
+    const html = await new Promise((resolve, reject) => {
+      chrome.runtime.sendMessage({ action: 'fetch-html', url }, (res) => {
+        if (chrome.runtime.lastError) {
+          reject(chrome.runtime.lastError);
+        } else if (!res || !res.success) {
+          reject(new Error(res?.error || 'Failed to fetch'));
+        } else {
+          resolve(res.text);
+        }
+      });
+    });
     const doc = new DOMParser().parseFromString(html, 'text/html');
     return Array.from(doc.querySelectorAll('#js-item-tag-list a div'))
       .map(el => el.textContent.trim())
