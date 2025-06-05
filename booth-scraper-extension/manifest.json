@@ -3,7 +3,7 @@
   "name": "Booth Library Scraper",
   "version": "1.0",
   "description": "Scrape Booth library and gift pages to JSON",
-  "permissions": ["activeTab", "scripting", "downloads"],
+  "permissions": ["activeTab", "scripting", "downloads", "notifications"],
   "host_permissions": ["https://booth.pm/*"],
   "background": {
     "service_worker": "background.js"
