@@ -11,7 +11,7 @@ chrome.action.onClicked.addListener((tab) => {
           type: 'basic',
           iconUrl: transparentIcon,
           title: 'Booth Scraper Error',
-          message: 'Could not start scraping. Try reloading the page.'
+          message: 'Could not start scraping. Ensure you are logged in and on the library page.'
         });
       }
     });

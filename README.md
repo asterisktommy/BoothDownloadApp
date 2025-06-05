@@ -32,7 +32,7 @@ The resulting executable will be under `BoothDownloadApp/bin/Debug/net8.0-window
    (`https://accounts.booth.pm/library` or `https://booth.pm/library`).
    You can also start the extension from the gifts page
    (`https://accounts.booth.pm/library/gifts`).
-   If you see an error about opening the page, reload the tab and try again.
+   If you see an error about opening the page, ensure you are logged in and on the correct page.
 3. Click the extension icon. It scrapes all pages of your library and gifts and downloads `booth_library.json`.
 4. Move or rename this file to `booth_data.json` in your `Downloads` folder so the WPF app can load it. Gift entries are also imported.
 
