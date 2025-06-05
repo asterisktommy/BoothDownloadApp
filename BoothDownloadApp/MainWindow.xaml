@@ -29,11 +29,14 @@
             <!-- フィルター領域 -->
             <StackPanel Grid.Column="0" Margin="5">
                 <TextBlock Text="フィルター" FontWeight="Bold" Margin="0,0,0,10"/>
-                <CheckBox Content="タグ" Margin="0,0,0,5" IsEnabled="False"/>
+                <ComboBox Width="150" Margin="0,0,0,5" ItemsSource="{Binding AvailableTags}"
+                          SelectedItem="{Binding SelectedTag}"/>
                 <CheckBox Content="未DLアイテム" Margin="0,0,0,5"
                           IsChecked="{Binding ShowOnlyNotDownloaded}"
                           Checked="FilterChanged" Unchecked="FilterChanged"/>
-                <CheckBox Content="更新あり" Margin="0,0,0,5" IsEnabled="False"/>
+                <CheckBox Content="更新あり" Margin="0,0,0,5"
+                          IsChecked="{Binding ShowOnlyUpdates}"
+                          Checked="FilterChanged" Unchecked="FilterChanged"/>
             </StackPanel>
 
             <!-- アイテム一覧領域 -->
