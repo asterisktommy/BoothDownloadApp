@@ -28,6 +28,7 @@ namespace BoothDownloadApp
         private ICollectionView ItemsView => CollectionViewSource.GetDefaultView(Items);
 
         private readonly DatabaseManager _dbManager = new DatabaseManager(Path.Combine(System.AppDomain.CurrentDomain.BaseDirectory, "download_history.db"));
+        private readonly Settings _settings = SettingsManager.Load();
 
         private bool _isDarkMode;
         public bool IsDarkMode
@@ -87,6 +88,9 @@ namespace BoothDownloadApp
             DataContext = this;
             OpenLinkCommand = new RelayCommand(OpenLink);
             _isDownloading = false;
+            // apply settings
+            IsDarkMode = _settings.DarkMode;
+            DownloadFolderPath = string.IsNullOrWhiteSpace(_settings.DownloadPath) ? "C:\\BoothData" : _settings.DownloadPath;
             // 起動時に管理用JSONファイルから読み込み（なければ作成）
             LoadManagementData();
         }
@@ -138,6 +142,9 @@ namespace BoothDownloadApp
         protected override void OnClosing(CancelEventArgs e)
         {
             SaveManagementData();
+            _settings.DarkMode = IsDarkMode;
+            _settings.DownloadPath = DownloadFolderPath;
+            SettingsManager.Save(_settings);
             base.OnClosing(e);
         }
 
@@ -198,6 +205,7 @@ namespace BoothDownloadApp
                         downloadedFiles++;
                         Progress = (int)((double)downloadedFiles / totalFiles * 100);
                         file.IsDownloaded = true;
+                        _dbManager.SaveHistoryItem(file.FileName, file.DownloadLink);
 
                     }
                     catch (OperationCanceledException)
@@ -397,6 +405,29 @@ namespace BoothDownloadApp
         private void FilterChanged(object sender, RoutedEventArgs e)
         {
             ApplyFilters();
+        }
+
+        private void RefreshStatus(object sender, RoutedEventArgs e)
+        {
+            UpdateDownloadStatus();
+        }
+
+        private void OpenEditWindow(object sender, RoutedEventArgs e)
+        {
+            if (itemsListView.SelectedItem is BoothItem item)
+            {
+                var list = new ObservableCollection<BoothItem.DownloadInfo>(item.Downloads);
+                var window = new EditDownloadDataWindow(list);
+                if (window.ShowDialog() == true)
+                {
+                    item.Downloads = list.ToList();
+                    SaveManagementData();
+                }
+            }
+            else
+            {
+                MessageBox.Show("アイテムを選択してください。", "情報", MessageBoxButton.OK, MessageBoxImage.Information);
+            }
         }
 
         private class RelayCommand : ICommand
