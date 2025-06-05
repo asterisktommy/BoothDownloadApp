@@ -1,9 +1,13 @@
+const transparentIcon =
+  'data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mNgYAAAAAMAASsJTYQAAAAASUVORK5CYII=';
+
 chrome.action.onClicked.addListener((tab) => {
   if (tab.id) {
     chrome.tabs.sendMessage(tab.id, { action: 'start-scrape' }, () => {
       if (chrome.runtime.lastError) {
         chrome.notifications.create({
           type: 'basic',
+          iconUrl: transparentIcon,
           title: 'Booth Scraper Error',
           message: 'Please open https://booth.pm/library before starting.'
         });
@@ -20,12 +24,14 @@ chrome.runtime.onMessage.addListener((msg, sender) => {
     if (msg.type === 'complete') {
       chrome.notifications.create({
         type: 'basic',
+        iconUrl: transparentIcon,
         title: 'Booth Scraper',
         message: 'Scraping completed successfully.'
       });
     } else if (msg.type === 'error') {
       chrome.notifications.create({
         type: 'basic',
+        iconUrl: transparentIcon,
         title: 'Booth Scraper Error',
         message: msg.message || 'An error occurred during scraping.'
       });
