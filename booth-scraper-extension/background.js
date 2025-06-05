@@ -2,16 +2,30 @@ const transparentIcon =
   'data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mNgYAAAAAMAASsJTYQAAAAASUVORK5CYII=';
 
 chrome.action.onClicked.addListener((tab) => {
-  if (tab.id) {
+  if (!tab.id || !tab.url) return;
+
+  const allowedPages = [
+    'https://accounts.booth.pm/library',
+    'https://booth.pm/library'
+  ];
+
+  if (allowedPages.some(p => tab.url.startsWith(p))) {
     chrome.tabs.sendMessage(tab.id, { action: 'start-scrape' }, () => {
       if (chrome.runtime.lastError) {
         chrome.notifications.create({
           type: 'basic',
           iconUrl: transparentIcon,
           title: 'Booth Scraper Error',
-          message: 'Please open https://booth.pm/library before starting.'
+          message: 'Please open your Booth library page after logging in.'
         });
       }
+    });
+  } else {
+    chrome.notifications.create({
+      type: 'basic',
+      iconUrl: transparentIcon,
+      title: 'Booth Scraper Error',
+      message: 'Please open your Booth library page after logging in.'
     });
   }
 });
