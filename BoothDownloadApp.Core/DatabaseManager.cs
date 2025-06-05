@@ -46,5 +46,22 @@
             insert.Parameters.AddWithValue("@url", url);
             insert.ExecuteNonQuery();
         }
+
+        public List<DownloadItem> LoadHistory()
+        {
+            var history = new List<DownloadItem>();
+            using var connection = new SQLiteConnection($"Data Source={_dbPath};Version=3;");
+            connection.Open();
+            using var command = new SQLiteCommand("CREATE TABLE IF NOT EXISTS History (Id INTEGER PRIMARY KEY, Name TEXT, URL TEXT);", connection);
+            command.ExecuteNonQuery();
+
+            using var select = new SQLiteCommand("SELECT Name, URL FROM History ORDER BY Id DESC;", connection);
+            using SQLiteDataReader reader = select.ExecuteReader();
+            while (reader.Read())
+            {
+                history.Add(new DownloadItem(reader.GetString(0), reader.GetString(1)));
+            }
+            return history;
+        }
     }
 }

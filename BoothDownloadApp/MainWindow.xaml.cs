@@ -13,6 +13,7 @@ using System.Net.Http;
 using System.Windows.Input;
 using System.Diagnostics;
 using System.Threading;
+using System.Threading.Tasks;
 using System.Windows.Data;
 using System.Windows.Controls;
 
@@ -195,27 +196,37 @@ namespace BoothDownloadApp
                 {
                     string filePath = Path.Combine(productFolder, file.FileName);
 
-                    try
+                    int attempts = 0;
+                    while (true)
                     {
-                        using HttpResponseMessage response = await httpClient.GetAsync(file.DownloadLink, token);
-                        response.EnsureSuccessStatusCode();
-                        await using FileStream fs = new FileStream(filePath, FileMode.Create, FileAccess.Write, FileShare.None);
-                        await response.Content.CopyToAsync(fs, token);
+                        try
+                        {
+                            using HttpResponseMessage response = await httpClient.GetAsync(file.DownloadLink, token);
+                            response.EnsureSuccessStatusCode();
+                            await using FileStream fs = new FileStream(filePath, FileMode.Create, FileAccess.Write, FileShare.None);
+                            await response.Content.CopyToAsync(fs, token);
 
-                        downloadedFiles++;
-                        Progress = (int)((double)downloadedFiles / totalFiles * 100);
-                        file.IsDownloaded = true;
-                        _dbManager.SaveHistoryItem(file.FileName, file.DownloadLink);
-
-                    }
-                    catch (OperationCanceledException)
-                    {
-                        MessageBox.Show("ダウンロードをキャンセルしました。", "情報", MessageBoxButton.OK, MessageBoxImage.Information);
-                        return;
-                    }
-                    catch (Exception ex)
-                    {
-                        MessageBox.Show($"ダウンロード失敗: {file.FileName}\n{ex.Message}", "エラー", MessageBoxButton.OK, MessageBoxImage.Error);
+                            downloadedFiles++;
+                            Progress = (int)((double)downloadedFiles / totalFiles * 100);
+                            file.IsDownloaded = true;
+                            _dbManager.SaveHistoryItem(file.FileName, file.DownloadLink);
+                            break;
+                        }
+                        catch (OperationCanceledException)
+                        {
+                            MessageBox.Show("ダウンロードをキャンセルしました。", "情報", MessageBoxButton.OK, MessageBoxImage.Information);
+                            return;
+                        }
+                        catch (Exception ex)
+                        {
+                            attempts++;
+                            if (attempts > _settings.RetryCount)
+                            {
+                                MessageBox.Show($"ダウンロード失敗: {file.FileName}\n{ex.Message}", "エラー", MessageBoxButton.OK, MessageBoxImage.Error);
+                                break;
+                            }
+                            await Task.Delay(1000, token);
+                        }
                     }
                 }
                 item.IsDownloaded = item.Downloads.All(d => d.IsDownloaded);
