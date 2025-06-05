@@ -4,52 +4,36 @@ const transparentIcon =
 chrome.action.onClicked.addListener((tab) => {
   if (!tab.id || !tab.url) return;
 
-  const allowedPages = [
-    'https://accounts.booth.pm/library',
-    'https://booth.pm/library',
-    'https://accounts.booth.pm/library/gifts',
-    'https://booth.pm/library/gifts'
-  ];
+  const start = () =>
+    chrome.tabs.sendMessage(tab.id, { action: 'start-scrape' }, () => {
+      if (chrome.runtime.lastError) {
+        chrome.notifications.create({
+          type: 'basic',
+          iconUrl: transparentIcon,
+          title: 'Booth Scraper Error',
+          message: 'Could not start scraping. Try reloading the page.'
+        });
+      }
+    });
 
-  if (allowedPages.some(p => tab.url.startsWith(p))) {
-    const start = () =>
-      chrome.tabs.sendMessage(tab.id, { action: 'start-scrape' }, () => {
+  chrome.tabs.sendMessage(tab.id, { action: 'ping' }, () => {
+    if (chrome.runtime.lastError) {
+      chrome.scripting.executeScript({ target: { tabId: tab.id }, files: ['content.js'] }, () => {
         if (chrome.runtime.lastError) {
           chrome.notifications.create({
             type: 'basic',
             iconUrl: transparentIcon,
             title: 'Booth Scraper Error',
-            message: 'Could not start scraping. Try reloading the page.'
+            message: 'Could not inject scraper script. Ensure you are logged in.'
           });
+        } else {
+          start();
         }
       });
-
-    chrome.tabs.sendMessage(tab.id, { action: 'ping' }, (res) => {
-      if (chrome.runtime.lastError) {
-        chrome.scripting.executeScript({ target: { tabId: tab.id }, files: ['content.js'] }, () => {
-          if (chrome.runtime.lastError) {
-            chrome.notifications.create({
-              type: 'basic',
-              iconUrl: transparentIcon,
-              title: 'Booth Scraper Error',
-              message: 'Please open your Booth library page after logging in.'
-            });
-          } else {
-            start();
-          }
-        });
-      } else {
-        start();
-      }
-    });
-  } else {
-    chrome.notifications.create({
-      type: 'basic',
-      iconUrl: transparentIcon,
-      title: 'Booth Scraper Error',
-      message: 'Please open your Booth library page after logging in.'
-    });
-  }
+    } else {
+      start();
+    }
+  });
 });
 
 chrome.runtime.onMessage.addListener((msg, sender) => {
