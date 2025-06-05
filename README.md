@@ -28,7 +28,8 @@ The resulting executable will be under `BoothDownloadApp/bin/Debug/net8.0-window
 ## Chrome Extension Usage
 
 1. Open `chrome://extensions`, enable **Developer mode**, and choose **Load unpacked**. Select the `booth-scraper-extension` directory.
-2. While logged in to Booth, visit `https://booth.pm/library`.
+2. While logged in to Booth, visit your library page
+   (`https://accounts.booth.pm/library` or `https://booth.pm/library`).
 3. Click the extension icon. It scrapes all pages of your library and gifts and downloads `booth_library.json`.
 4. Move or rename this file to `booth_data.json` in your `Downloads` folder so the WPF app can load it. Gift entries are also imported.
 

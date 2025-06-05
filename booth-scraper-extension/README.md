@@ -6,7 +6,8 @@ all purchase and gift information to a JSON file.
 ## Usage
 1. Load the extension from this folder (`chrome://extensions`, enable Developer Mode,
    then "Load unpacked").
-2. Navigate to `https://booth.pm/library` while logged in.
+2. Navigate to your Booth library page after logging in
+   (`https://accounts.booth.pm/library` or `https://booth.pm/library`).
 3. Click the extension icon to start scraping. It will fetch every page of the
    library and gift sections and then download `booth_library.json`.
 

@@ -4,7 +4,10 @@
   "version": "1.0",
   "description": "Scrape Booth library and gift pages to JSON",
   "permissions": ["activeTab", "scripting", "downloads", "notifications"],
-  "host_permissions": ["https://booth.pm/*"],
+  "host_permissions": [
+    "https://booth.pm/*",
+    "https://accounts.booth.pm/*"
+  ],
   "background": {
     "service_worker": "background.js"
   },
@@ -13,7 +16,10 @@
   },
   "content_scripts": [
     {
-      "matches": ["https://booth.pm/*"],
+      "matches": [
+        "https://booth.pm/*",
+        "https://accounts.booth.pm/*"
+      ],
       "js": ["content.js"]
     }
   ]
