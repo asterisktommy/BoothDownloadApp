@@ -37,15 +37,16 @@ async function parsePage(doc) {
 async function scrapeSection(path) {
   let page = 1;
   let all = [];
+  const useCurrent = location.pathname === path;
   while (true) {
     const url = `${path}?page=${page}`;
     let html;
-    if (page === 1 && location.pathname.startsWith(path)) {
+    if (page === 1 && useCurrent) {
       html = document.documentElement.outerHTML;
     } else {
       html = await fetch(url, { credentials: 'include' }).then(r => r.text());
     }
-    const doc = page === 1 && location.pathname.startsWith(path) ? document : new DOMParser().parseFromString(html, 'text/html');
+    const doc = page === 1 && useCurrent ? document : new DOMParser().parseFromString(html, 'text/html');
     const items = await parsePage(doc);
     all = all.concat(items);
     const next = doc.querySelector('.pager nav ul li a[rel="next"]');
@@ -75,5 +76,7 @@ async function scrapeAll() {
 chrome.runtime.onMessage.addListener((msg) => {
   if (msg.action === 'start-scrape') {
     scrapeAll();
+  } else if (msg.action === 'ping') {
+    return Promise.resolve('pong');
   }
 });
