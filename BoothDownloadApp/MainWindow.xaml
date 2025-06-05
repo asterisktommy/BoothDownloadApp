@@ -114,6 +114,7 @@
             <Button Content="📂選択" Width="80" Margin="5" Click="SelectDownloadFolder"/>
             <Button Content="📂開く" Width="80" Margin="5" Click="OpenDownloadFolder"/>
             <Button Content="✏️ 編集" Width="80" Margin="5" Click="OpenEditWindow"/>
+            <Button Content="＋ 手動追加" Width="80" Margin="5" Click="OpenManualAdd"/>
 
             <Button Content="⬇️ ダウンロード開始" Width="120" Margin="5" Click="StartDownload"/>
             <Button Content="⏸ 停止" Width="80" Margin="5" Click="StopDownload"/>

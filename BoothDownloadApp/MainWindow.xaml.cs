@@ -507,6 +507,31 @@ namespace BoothDownloadApp
             }
         }
 
+        private void OpenManualAdd(object sender, RoutedEventArgs e)
+        {
+            var window = new ManualAddWindow();
+            if (window.ShowDialog() == true && window.ResultItem != null)
+            {
+                var item = window.ResultItem;
+                foreach (var path in window.SelectedFilePaths)
+                {
+                    string dest = Path.Combine(DownloadFolderPath, item.ShopName, item.ProductName, Path.GetFileName(path));
+                    Directory.CreateDirectory(Path.GetDirectoryName(dest)!);
+                    try
+                    {
+                        File.Copy(path, dest, true);
+                    }
+                    catch (Exception ex)
+                    {
+                        MessageBox.Show($"ファイルコピーに失敗しました: {ex.Message}", "エラー", MessageBoxButton.OK, MessageBoxImage.Error);
+                    }
+                }
+                Items.Add(item);
+                SaveManagementData();
+                UpdateDownloadStatus();
+            }
+        }
+
         private class RelayCommand : ICommand
         {
             private readonly Action<object?> _execute;
