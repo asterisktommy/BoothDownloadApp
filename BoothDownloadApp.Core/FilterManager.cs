@@ -1,4 +1,6 @@
-﻿namespace BoothDownloadApp
+using System.Linq;
+
+namespace BoothDownloadApp
 {
     public class FilterManager
     {
