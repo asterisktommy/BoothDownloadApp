@@ -56,10 +56,20 @@ async function scrapeSection(path) {
 }
 
 async function scrapeAll() {
-  const library = await scrapeSection('/library');
-  const gifts = await scrapeSection('/library/gifts');
-  const data = JSON.stringify({ library, gifts }, null, 2);
-  chrome.runtime.sendMessage({ action: 'download-json', data });
+  try {
+    const library = await scrapeSection('/library');
+    const gifts = await scrapeSection('/library/gifts');
+    const data = JSON.stringify({ library, gifts }, null, 2);
+    chrome.runtime.sendMessage({ action: 'download-json', data });
+    chrome.runtime.sendMessage({ action: 'notify', type: 'complete' });
+  } catch (e) {
+    console.error('Scrape failed', e);
+    chrome.runtime.sendMessage({
+      action: 'notify',
+      type: 'error',
+      message: e.message || 'Unexpected error'
+    });
+  }
 }
 
 chrome.runtime.onMessage.addListener((msg) => {
