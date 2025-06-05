@@ -73,10 +73,15 @@ async function scrapeAll() {
   }
 }
 
-chrome.runtime.onMessage.addListener((msg) => {
+chrome.runtime.onMessage.addListener((msg, sender, sendResponse) => {
   if (msg.action === 'start-scrape') {
-    scrapeAll();
-  } else if (msg.action === 'ping') {
-    return Promise.resolve('pong');
+    scrapeAll()
+      .then(() => sendResponse('done'))
+      .catch(() => sendResponse('error'));
+    return true; // <- 非同期応答なのでポートを開けておく
+  }
+
+  if (msg.action === 'ping') {
+    sendResponse('pong');       // ここで即答する
   }
 });
