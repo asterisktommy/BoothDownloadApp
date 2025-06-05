@@ -10,6 +10,7 @@ using System.Windows.Forms;
 using OpenFileDialog = Microsoft.Win32.OpenFileDialog;
 using Microsoft.WindowsAPICodePack.Dialogs;
 using System.Net.Http;
+using System.Linq;
 using System.Windows.Input;
 using System.Diagnostics;
 using System.Threading;
@@ -61,6 +62,39 @@ namespace BoothDownloadApp
             }
         }
 
+        private bool _showOnlyUpdates;
+        public bool ShowOnlyUpdates
+        {
+            get => _showOnlyUpdates;
+            set
+            {
+                if (_showOnlyUpdates != value)
+                {
+                    _showOnlyUpdates = value;
+                    OnPropertyChanged();
+                    ApplyFilters();
+                }
+            }
+        }
+
+        private readonly ObservableCollection<string> _availableTags = new ObservableCollection<string>();
+        public ObservableCollection<string> AvailableTags => _availableTags;
+
+        private string? _selectedTag = "All";
+        public string? SelectedTag
+        {
+            get => _selectedTag;
+            set
+            {
+                if (_selectedTag != value)
+                {
+                    _selectedTag = value;
+                    OnPropertyChanged();
+                    ApplyFilters();
+                }
+            }
+        }
+
         private int _progress;
         public int Progress
         {
@@ -104,7 +138,7 @@ namespace BoothDownloadApp
         {
             if (!File.Exists(manageFilePath))
             {
-                var emptyLibrary = new BoothLibrary { Library = new List<BoothItem>() };
+                var emptyLibrary = new BoothLibrary { Library = new List<BoothItem>(), Gifts = new List<BoothItem>() };
                 string defaultJson = JsonSerializer.Serialize(emptyLibrary, JsonSerializerOptions);
                 File.WriteAllText(manageFilePath, defaultJson);
             }
@@ -113,12 +147,22 @@ namespace BoothDownloadApp
             {
                 string json = File.ReadAllText(manageFilePath);
                 var boothLibrary = JsonSerializer.Deserialize<BoothLibrary>(json, JsonSerializerOptions);
-                if (boothLibrary?.Library != null)
+                if (boothLibrary != null)
                 {
                     Items.Clear();
-                    foreach (var item in boothLibrary.Library)
+                    if (boothLibrary.Library != null)
                     {
-                        Items.Add(item);
+                        foreach (var item in boothLibrary.Library)
+                        {
+                            Items.Add(item);
+                        }
+                    }
+                    if (boothLibrary.Gifts != null)
+                    {
+                        foreach (var item in boothLibrary.Gifts)
+                        {
+                            Items.Add(item);
+                        }
                     }
                     UpdateDownloadStatus();
                     ApplyFilters();
@@ -135,7 +179,7 @@ namespace BoothDownloadApp
         /// </summary>
         private void SaveManagementData()
         {
-            var boothLibrary = new BoothLibrary { Library = Items.ToList() };
+            var boothLibrary = new BoothLibrary { Library = Items.ToList(), Gifts = new List<BoothItem>() };
             string json = JsonSerializer.Serialize(boothLibrary, JsonSerializerOptions);
             File.WriteAllText(manageFilePath, json);
         }
@@ -268,12 +312,22 @@ namespace BoothDownloadApp
                     string json = File.ReadAllText(targetPath);
                     var boothLibrary = JsonSerializer.Deserialize<BoothLibrary>(json, JsonSerializerOptions);
 
-                    if (boothLibrary?.Library != null)
+                    if (boothLibrary != null)
                     {
                         Items.Clear();
-                        foreach (var item in boothLibrary.Library)
+                        if (boothLibrary.Library != null)
                         {
-                            Items.Add(item);
+                            foreach (var item in boothLibrary.Library)
+                            {
+                                Items.Add(item);
+                            }
+                        }
+                        if (boothLibrary.Gifts != null)
+                        {
+                            foreach (var item in boothLibrary.Gifts)
+                            {
+                                Items.Add(item);
+                            }
                         }
                         UpdateDownloadStatus();
                         ApplyFilters();
@@ -378,7 +432,23 @@ namespace BoothDownloadApp
                 }
                 item.IsDownloaded = item.Downloads.All(d => d.IsDownloaded);
             }
+            UpdateAvailableTags();
             ApplyFilters();
+        }
+
+        private void UpdateAvailableTags()
+        {
+            var tags = Items.SelectMany(i => i.Tags).Distinct().OrderBy(t => t).ToList();
+            _availableTags.Clear();
+            _availableTags.Add("All");
+            foreach (var t in tags)
+            {
+                _availableTags.Add(t);
+            }
+            if (!_availableTags.Contains(SelectedTag ?? ""))
+            {
+                SelectedTag = "All";
+            }
         }
 
         private void ApplyFilters()
@@ -388,11 +458,7 @@ namespace BoothDownloadApp
             ItemsView.Filter = obj =>
             {
                 if (obj is not BoothItem item) return false;
-                if (ShowOnlyNotDownloaded && item.IsDownloaded)
-                {
-                    return false;
-                }
-                return true;
+                return FilterManager.Matches(item, ShowOnlyNotDownloaded, SelectedTag, ShowOnlyUpdates);
             };
 
             ItemsView.Refresh();

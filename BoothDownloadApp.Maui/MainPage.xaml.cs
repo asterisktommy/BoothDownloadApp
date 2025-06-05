@@ -38,12 +38,22 @@ namespace BoothDownloadApp.Maui
                 {
                     using var stream = await result.OpenReadAsync();
                     var library = await JsonSerializer.DeserializeAsync<BoothLibrary>(stream, JsonOptions);
-                    if (library?.Library != null)
+                    if (library != null)
                     {
                         Items.Clear();
-                        foreach (var item in library.Library)
+                        if (library.Library != null)
                         {
-                            Items.Add(item);
+                            foreach (var item in library.Library)
+                            {
+                                Items.Add(item);
+                            }
+                        }
+                        if (library.Gifts != null)
+                        {
+                            foreach (var item in library.Gifts)
+                            {
+                                Items.Add(item);
+                            }
                         }
                     }
                 }
