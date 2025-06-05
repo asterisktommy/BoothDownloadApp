@@ -23,6 +23,9 @@ namespace BoothDownloadApp
         [JsonPropertyName("downloads")]
         public List<DownloadInfo> Downloads { get; set; } = new List<DownloadInfo>();
 
+        [JsonPropertyName("tags")]
+        public List<string> Tags { get; set; } = new List<string>();
+
         public bool IsSelected
         {
             get => _isSelected;
