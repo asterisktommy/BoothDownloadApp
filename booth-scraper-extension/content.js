@@ -1,17 +1,36 @@
-function parsePage(doc) {
+async function fetchTags(url) {
+  try {
+    const html = await fetch(url, { credentials: 'include' }).then(r => r.text());
+    const doc = new DOMParser().parseFromString(html, 'text/html');
+    return Array.from(doc.querySelectorAll('#js-item-tag-list a div'))
+      .map(el => el.textContent.trim())
+      .filter(t => t.length > 0);
+  } catch (e) {
+    console.error('Failed to fetch tags', e);
+    return [];
+  }
+}
+
+async function parsePage(doc) {
   const items = [];
-  doc.querySelectorAll('div.mb-16.bg-white').forEach(card => {
+  const cards = doc.querySelectorAll('div.mb-16.bg-white');
+  for (const card of cards) {
     const productName = card.querySelector('a[target="_blank"] div.font-bold')?.textContent.trim() || '';
     const shopName = card.querySelector('a[target="_blank"] + a div.typography-14')?.textContent.trim() || '';
     const thumbnail = card.querySelector('a[target="_blank"] img')?.src || '';
+    const productLink = card.querySelector('a[target="_blank"]')?.href || '';
     const downloads = [];
     card.querySelectorAll('div.mt-16.desktop\\:flex').forEach(row => {
       const fileName = row.querySelector('div.typography-14')?.textContent.trim() || '';
       const link = row.querySelector('a[href*="downloadables"]')?.href || '';
       if (fileName && link) downloads.push({ fileName, downloadLink: link });
     });
-    if (productName) items.push({ productName, shopName, thumbnail, downloads });
-  });
+    let tags = [];
+    if (productLink) {
+      tags = await fetchTags(productLink);
+    }
+    if (productName) items.push({ productName, shopName, thumbnail, downloads, tags });
+  }
   return items;
 }
 
@@ -27,7 +46,8 @@ async function scrapeSection(path) {
       html = await fetch(url, { credentials: 'include' }).then(r => r.text());
     }
     const doc = page === 1 && location.pathname.startsWith(path) ? document : new DOMParser().parseFromString(html, 'text/html');
-    all = all.concat(parsePage(doc));
+    const items = await parsePage(doc);
+    all = all.concat(items);
     const next = doc.querySelector('.pager nav ul li a[rel="next"]');
     if (!next) break;
     page++;
