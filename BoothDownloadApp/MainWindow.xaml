@@ -37,7 +37,7 @@
             </StackPanel>
 
             <!-- アイテム一覧領域 -->
-            <ListView Grid.Column="1" Margin="5" ItemsSource="{Binding Items}" SelectionChanged="ListView_SelectionChanged">
+            <ListView x:Name="itemsListView" Grid.Column="1" Margin="5" ItemsSource="{Binding Items}" SelectionChanged="ListView_SelectionChanged">
                 <ListView.View>
                     <GridView>
                         <GridViewColumn Header="商品名" Width="200">
@@ -110,10 +110,11 @@
             <TextBlock Text="{Binding DownloadFolderPath}" Width="200" TextWrapping="Wrap"/>
             <Button Content="📂選択" Width="80" Margin="5" Click="SelectDownloadFolder"/>
             <Button Content="📂開く" Width="80" Margin="5" Click="OpenDownloadFolder"/>
+            <Button Content="✏️ 編集" Width="80" Margin="5" Click="OpenEditWindow"/>
 
             <Button Content="⬇️ ダウンロード開始" Width="120" Margin="5" Click="StartDownload"/>
             <Button Content="⏸ 停止" Width="80" Margin="5" Click="StopDownload"/>
-            <Button Content="🔄 更新" Width="80" Margin="5"/>
+            <Button Content="🔄 更新" Width="80" Margin="5" Click="RefreshStatus"/>
             <CheckBox Content="🌙 ダークモード" Margin="5" IsChecked="{Binding IsDarkMode}"/>
             <!-- 進捗バーを横幅いっぱいに配置 -->
             <ProgressBar x:Name="DownloadProgress" Height="20" Margin="20,0,10,0" VerticalAlignment="Center"
