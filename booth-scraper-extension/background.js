@@ -36,8 +36,14 @@ chrome.action.onClicked.addListener((tab) => {
   });
 });
 
-chrome.runtime.onMessage.addListener((msg, sender) => {
-  if (msg.action === 'download-json') {
+chrome.runtime.onMessage.addListener((msg, sender, sendResponse) => {
+  if (msg.action === 'fetch-html') {
+    fetch(msg.url, { credentials: 'include' })
+      .then(r => r.text())
+      .then(text => sendResponse({ success: true, text }))
+      .catch(e => sendResponse({ success: false, error: e.message }));
+    return true;
+  } else if (msg.action === 'download-json') {
     const url = URL.createObjectURL(new Blob([msg.data], { type: 'application/json' }));
     chrome.downloads.download({ url, filename: 'booth_library.json', saveAs: true });
   } else if (msg.action === 'notify') {
