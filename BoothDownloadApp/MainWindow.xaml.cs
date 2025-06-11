@@ -32,17 +32,18 @@ namespace BoothDownloadApp
         private readonly DatabaseManager _dbManager = new DatabaseManager(Path.Combine(System.AppDomain.CurrentDomain.BaseDirectory, "download_history.db"));
         private readonly Settings _settings = SettingsManager.Load();
 
-        private bool _isDarkMode;
-        public bool IsDarkMode
+
+        private bool _showOnlyFavorites;
+        public bool ShowOnlyFavorites
         {
-            get => _isDarkMode;
+            get => _showOnlyFavorites;
             set
             {
-                if (_isDarkMode != value)
+                if (_showOnlyFavorites != value)
                 {
-                    _isDarkMode = value;
+                    _showOnlyFavorites = value;
                     OnPropertyChanged();
-                    ThemeManager.ToggleDarkMode(value);
+                    ApplyFilters();
                 }
             }
         }
@@ -79,6 +80,9 @@ namespace BoothDownloadApp
 
         private readonly ObservableCollection<string> _availableTags = new ObservableCollection<string>();
         public ObservableCollection<string> AvailableTags => _availableTags;
+
+        private readonly ObservableCollection<string> _favoriteTags = new ObservableCollection<string>();
+        public ObservableCollection<string> FavoriteTags => _favoriteTags;
 
         private string? _selectedTag = "All";
         public string? SelectedTag
@@ -139,8 +143,14 @@ namespace BoothDownloadApp
             OpenLinkCommand = new RelayCommand(OpenLink);
             _isDownloading = false;
             // apply settings
-            IsDarkMode = _settings.DarkMode;
             DownloadFolderPath = string.IsNullOrWhiteSpace(_settings.DownloadPath) ? "C:\\BoothData" : _settings.DownloadPath;
+            if (_settings.FavoriteTags != null)
+            {
+                foreach (var t in _settings.FavoriteTags)
+                {
+                    _favoriteTags.Add(t);
+                }
+            }
             // 起動後に管理用JSONを読み込む
             Loaded += async (_, __) => await LoadManagementDataAsync();
         }
@@ -202,8 +212,8 @@ namespace BoothDownloadApp
         protected override void OnClosing(CancelEventArgs e)
         {
             SaveManagementData();
-            _settings.DarkMode = IsDarkMode;
             _settings.DownloadPath = DownloadFolderPath;
+            _settings.FavoriteTags = _favoriteTags.ToList();
             SettingsManager.Save(_settings);
             base.OnClosing(e);
         }
@@ -451,6 +461,13 @@ namespace BoothDownloadApp
             {
                 SelectedTag = "All";
             }
+            foreach (var f in _favoriteTags.ToList())
+            {
+                if (!tags.Contains(f))
+                {
+                    _favoriteTags.Remove(f);
+                }
+            }
         }
 
         private async Task FetchMissingTagsAsync()
@@ -493,7 +510,7 @@ namespace BoothDownloadApp
             ItemsView.Filter = obj =>
             {
                 if (obj is not BoothItem item) return false;
-                return FilterManager.Matches(item, ShowOnlyNotDownloaded, SelectedTag, ShowOnlyUpdates, SearchQuery);
+                return FilterManager.Matches(item, ShowOnlyNotDownloaded, SelectedTag, ShowOnlyUpdates, SearchQuery, ShowOnlyFavorites, FavoriteTags);
             };
 
             ItemsView.Refresh();
@@ -519,10 +536,6 @@ namespace BoothDownloadApp
             ApplyFilters();
         }
 
-        private void RefreshStatus(object sender, RoutedEventArgs e)
-        {
-            UpdateDownloadStatus();
-        }
 
         private void OpenEditWindow(object sender, RoutedEventArgs e)
         {
@@ -564,6 +577,21 @@ namespace BoothDownloadApp
                 Items.Add(item);
                 SaveManagementData();
                 UpdateDownloadStatus();
+            }
+        }
+
+        private void OpenFavoritesSetting(object sender, RoutedEventArgs e)
+        {
+            var tags = _availableTags.Where(t => t != "All");
+            var window = new FavoriteTagsWindow(tags, _favoriteTags);
+            if (window.ShowDialog() == true)
+            {
+                _favoriteTags.Clear();
+                foreach (var t in window.SelectedTags)
+                {
+                    _favoriteTags.Add(t);
+                }
+                ApplyFilters();
             }
         }
 

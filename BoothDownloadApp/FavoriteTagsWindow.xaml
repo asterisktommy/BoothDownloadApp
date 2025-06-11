@@ -1,0 +1,14 @@
+<Window x:Class="BoothDownloadApp.FavoriteTagsWindow"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        Title="お気に入りタグ設定" Height="350" Width="250">
+    <StackPanel Margin="10">
+        <ScrollViewer Height="200">
+            <StackPanel x:Name="TagsPanel"/>
+        </ScrollViewer>
+        <StackPanel Orientation="Horizontal" HorizontalAlignment="Right" Margin="0,10,0,0">
+            <Button Content="OK" Width="80" Margin="5" Click="OkButton_Click"/>
+            <Button Content="キャンセル" Width="80" Margin="5" Click="CancelButton_Click"/>
+        </StackPanel>
+    </StackPanel>
+</Window>

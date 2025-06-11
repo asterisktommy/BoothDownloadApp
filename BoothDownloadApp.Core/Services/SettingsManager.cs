@@ -1,6 +1,7 @@
 using System;
 using System.IO;
 using System.Text.Json;
+using System.Collections.Generic;
 
 namespace BoothDownloadApp
 {
@@ -27,7 +28,7 @@ namespace BoothDownloadApp
             {
                 // ignore and fall back to defaults
             }
-            return new Settings { DownloadPath = "C:\\BoothData", RetryCount = 3 };
+            return new Settings { DownloadPath = "C:\\BoothData", RetryCount = 3, FavoriteTags = new List<string>() };
         }
 
         public static void Save(Settings settings)

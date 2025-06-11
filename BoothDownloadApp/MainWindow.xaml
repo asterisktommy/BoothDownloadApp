@@ -37,6 +37,10 @@
                 <CheckBox Content="更新あり" Margin="0,0,0,5"
                           IsChecked="{Binding ShowOnlyUpdates}"
                           Checked="FilterChanged" Unchecked="FilterChanged"/>
+                <CheckBox Content="お気に入り" Margin="0,0,0,5"
+                          IsChecked="{Binding ShowOnlyFavorites}"
+                          Checked="FilterChanged" Unchecked="FilterChanged"/>
+                <Button Content="☆ 設定" Width="100" Margin="0,0,0,5" Click="OpenFavoritesSetting"/>
                 <TextBlock Text="検索" Margin="0,10,0,0"/>
                 <TextBox Width="150" Margin="0,0,0,5" Text="{Binding SearchQuery, UpdateSourceTrigger=PropertyChanged}" TextChanged="FilterChanged"/>
             </StackPanel>
@@ -120,8 +124,7 @@
 
             <Button Content="⬇️ ダウンロード開始" Width="120" Margin="5" Click="StartDownload"/>
             <Button Content="⏸ 停止" Width="80" Margin="5" Click="StopDownload"/>
-            <Button Content="🔄 更新" Width="80" Margin="5" Click="RefreshStatus"/>
-            <CheckBox Content="🌙 ダークモード" Margin="5" IsChecked="{Binding IsDarkMode}"/>
+            
             <!-- 進捗バーを横幅いっぱいに配置 -->
             <ProgressBar x:Name="DownloadProgress" Height="20" Margin="20,0,10,0" VerticalAlignment="Center"
                          Minimum="0" Maximum="100" Width="200"
