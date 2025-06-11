@@ -118,9 +118,11 @@ namespace BoothDownloadApp
             {
                 ProductName = ProductNameTextBox.Text,
                 ShopName = ShopNameTextBox.Text,
+                ItemUrl = UrlTextBox.Text.Trim(),
                 Tags = TagsTextBox.Text.Split(',', StringSplitOptions.RemoveEmptyEntries).Select(t => t.Trim()).ToList(),
                 Downloads = downloads,
-                IsDownloaded = downloads.All(d => d.IsDownloaded)
+                IsDownloaded = downloads.All(d => d.IsDownloaded),
+                TagsFetched = !string.IsNullOrWhiteSpace(TagsTextBox.Text)
             };
 
             DialogResult = true;
