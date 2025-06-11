@@ -1,6 +1,8 @@
 (async () => {
   const sleep = ms => new Promise(res => setTimeout(res, ms));
-  const base = "https://booth.pm";
+  // Use the current page's origin so the script works on both
+  // https://booth.pm and https://accounts.booth.pm
+  const base = location.origin;
 
   const updateProgress = (text, value, max) => {
     const progress = document.getElementById("progress");
