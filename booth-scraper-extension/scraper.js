@@ -62,11 +62,16 @@
         if (i >= total) break;
         updateProgress('タグ取得中', i + 1, total);
         try {
-          const res = await fetch(items[i].itemUrl);
-          const html = await res.text();
-          const doc = new DOMParser().parseFromString(html, 'text/html');
-          const tagEls = doc.querySelectorAll("a[href*='/items?tags']");
-          items[i].tags = Array.from(tagEls).map(el => el.textContent.trim());
+          const idMatch = items[i].itemUrl.match(/items\/(\d+)/);
+          if (!idMatch) continue;
+          const apiUrl = `${location.origin}/items/${idMatch[1]}.json`;
+          const res = await fetch(apiUrl);
+          const json = await res.json();
+          if (Array.isArray(json.tags)) {
+            items[i].tags = json.tags
+              .map(t => t && t.name ? t.name.trim() : '')
+              .filter(t => t);
+          }
         } catch (e) {
           console.warn('タグ取得失敗', items[i].itemUrl, e);
         }
