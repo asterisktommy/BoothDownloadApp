@@ -1,6 +1,19 @@
 (() => {
   const sleep = ms => new Promise(res => setTimeout(res, ms));
-  const base = location.origin;
+  const base = 'https://booth.pm';
+
+  const fetchHtml = async url =>
+    new Promise((resolve, reject) => {
+      chrome.runtime.sendMessage({ action: 'fetch-html', url }, res => {
+        if (chrome.runtime.lastError) {
+          reject(chrome.runtime.lastError);
+        } else if (res && res.success) {
+          resolve(res.text);
+        } else {
+          reject(new Error(res?.error || 'failed to fetch html'));
+        }
+      });
+    });
 
   const updateProgress = (text, value, max) => {
     const progress = document.getElementById('progress');
@@ -42,8 +55,13 @@
     const all = [];
     while (true) {
       const url = `${base}${path}?page=${page}`;
-      const res = await fetch(url);
-      const html = await res.text();
+      let html;
+      try {
+        html = await fetchHtml(url);
+      } catch (e) {
+        console.warn('ページ取得失敗', url, e);
+        break;
+      }
       const products = extractProducts(html);
       if (products.length === 0) break;
       all.push(...products);
