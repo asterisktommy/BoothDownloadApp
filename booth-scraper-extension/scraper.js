@@ -3,12 +3,8 @@
   const base = location.origin;
 
   const updateProgress = (text, value, max) => {
-    const progress = document.getElementById('progress');
-    const status = document.getElementById('status');
-    if (progress && status) {
-      progress.max = max;
-      progress.value = value;
-      status.textContent = `${text} (${value}/${max})`;
+    if (typeof chrome !== 'undefined' && chrome.runtime) {
+      chrome.runtime.sendMessage({ action: 'progress', text, value, max });
     }
   };
 
