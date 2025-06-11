@@ -17,7 +17,6 @@ using System.Threading;
 using System.Threading.Tasks;
 using System.Windows.Data;
 using System.Windows.Controls;
-using Microsoft.VisualBasic;
 
 
 
@@ -350,34 +349,6 @@ namespace BoothDownloadApp
             }
         }
 
-        private async void AddItemFromUrl(object sender, RoutedEventArgs e)
-        {
-            string url = Interaction.InputBox("商品URLを入力してください", "URL入力", "");
-            if (string.IsNullOrWhiteSpace(url)) return;
-
-            try
-            {
-                var item = await ProductFetcher.FetchItemAsync(url);
-                if (item != null)
-                {
-                    item.ItemUrl = url;
-                    item.TagsFetched = item.Tags.Count > 0;
-                    Items.Add(item);
-                    SaveManagementData();
-                    UpdateDownloadStatus();
-                    ApplyFilters();
-                    MessageBox.Show("商品情報を追加しました。", "情報", MessageBoxButton.OK, MessageBoxImage.Information);
-                }
-                else
-                {
-                    MessageBox.Show("商品情報を取得できませんでした。", "エラー", MessageBoxButton.OK, MessageBoxImage.Error);
-                }
-            }
-            catch (Exception ex)
-            {
-                MessageBox.Show($"取得に失敗しました: {ex.Message}", "エラー", MessageBoxButton.OK, MessageBoxImage.Error);
-            }
-        }
 
         #region INotifyPropertyChanged 実装
         public event PropertyChangedEventHandler? PropertyChanged;
