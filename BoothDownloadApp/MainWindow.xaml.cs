@@ -96,6 +96,21 @@ namespace BoothDownloadApp
             }
         }
 
+        private string _searchQuery = string.Empty;
+        public string SearchQuery
+        {
+            get => _searchQuery;
+            set
+            {
+                if (_searchQuery != value)
+                {
+                    _searchQuery = value;
+                    OnPropertyChanged();
+                    ApplyFilters();
+                }
+            }
+        }
+
         private int _progress;
         public int Progress
         {
@@ -507,7 +522,7 @@ namespace BoothDownloadApp
             ItemsView.Filter = obj =>
             {
                 if (obj is not BoothItem item) return false;
-                return FilterManager.Matches(item, ShowOnlyNotDownloaded, SelectedTag, ShowOnlyUpdates);
+                return FilterManager.Matches(item, ShowOnlyNotDownloaded, SelectedTag, ShowOnlyUpdates, SearchQuery);
             };
 
             ItemsView.Refresh();

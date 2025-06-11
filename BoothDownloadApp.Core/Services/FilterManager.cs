@@ -8,7 +8,7 @@ namespace BoothDownloadApp
     /// </summary>
     public static class FilterManager
     {
-        public static bool Matches(BoothItem item, bool showOnlyNotDownloaded, string? tag, bool showOnlyUpdates)
+        public static bool Matches(BoothItem item, bool showOnlyNotDownloaded, string? tag, bool showOnlyUpdates, string? search)
         {
             if (showOnlyNotDownloaded && item.IsDownloaded)
             {
@@ -30,12 +30,24 @@ namespace BoothDownloadApp
                 }
             }
 
+            if (!string.IsNullOrWhiteSpace(search))
+            {
+                search = search.ToLowerInvariant();
+                bool textMatch = item.ProductName.ToLowerInvariant().Contains(search)
+                                 || item.ShopName.ToLowerInvariant().Contains(search)
+                                 || item.Tags.Any(t => t.ToLowerInvariant().Contains(search));
+                if (!textMatch)
+                {
+                    return false;
+                }
+            }
+
             return true;
         }
 
-        public static IEnumerable<BoothItem> Apply(IEnumerable<BoothItem> items, bool showOnlyNotDownloaded, string? tag, bool showOnlyUpdates)
+        public static IEnumerable<BoothItem> Apply(IEnumerable<BoothItem> items, bool showOnlyNotDownloaded, string? tag, bool showOnlyUpdates, string? search)
         {
-            return items.Where(i => Matches(i, showOnlyNotDownloaded, tag, showOnlyUpdates));
+            return items.Where(i => Matches(i, showOnlyNotDownloaded, tag, showOnlyUpdates, search));
         }
     }
 }

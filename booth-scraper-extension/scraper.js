@@ -2,11 +2,6 @@
   const sleep = ms => new Promise(res => setTimeout(res, ms));
   const base = location.origin;
 
-  const updateProgress = (text, value, max) => {
-    if (typeof chrome !== 'undefined' && chrome.runtime) {
-      chrome.runtime.sendMessage({ action: 'progress', text, value, max });
-    }
-  };
 
   const extractProducts = html => {
     const doc = new DOMParser().parseFromString(html, 'text/html');
@@ -49,43 +44,11 @@
     return all;
   };
 
-  const getTags = async (items, concurrency = 5) => {
-    let index = 0;
-    const total = items.length;
-    const worker = async () => {
-      while (true) {
-        const i = index++;
-        if (i >= total) break;
-        updateProgress('タグ取得中', i + 1, total);
-        try {
-          const url = new URL(items[i].itemUrl);
-          const pathMatch = url.pathname.match(/^\/(?:([a-z]{2})\/)?items\/(\d+)/);
-          if (!pathMatch) continue;
-          const lang = pathMatch[1] || 'ja';
-          const apiUrl = `${url.origin}/${lang}/items/${pathMatch[2]}.json`;
-          const res = await fetch(apiUrl);
-          const json = await res.json();
-          if (Array.isArray(json.tags)) {
-            items[i].tags = json.tags
-              .map(t => (t && t.name ? t.name.trim() : ''))
-              .filter(t => t);
-          }
-        } catch (e) {
-          console.warn('タグ取得失敗', items[i].itemUrl, e);
-        }
-      }
-    };
-    const workers = Array.from({ length: concurrency }, worker);
-    await Promise.all(workers);
-  };
-
   const scrapeLibrary = async () => {
     const all = [
       ...(await getAllPages('/library')),
       ...(await getAllPages('/library/gifts'))
     ];
-    updateProgress('商品タグ取得準備中', 0, all.length);
-    await getTags(all);
     return all;
   };
 
