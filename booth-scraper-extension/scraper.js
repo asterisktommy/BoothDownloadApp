@@ -62,14 +62,16 @@
         if (i >= total) break;
         updateProgress('タグ取得中', i + 1, total);
         try {
-          const idMatch = items[i].itemUrl.match(/items\/(\d+)/);
-          if (!idMatch) continue;
-          const apiUrl = `${location.origin}/items/${idMatch[1]}.json`;
+          const url = new URL(items[i].itemUrl);
+          const pathMatch = url.pathname.match(/^\/(?:([a-z]{2})\/)?items\/(\d+)/);
+          if (!pathMatch) continue;
+          const lang = pathMatch[1] || 'ja';
+          const apiUrl = `${url.origin}/${lang}/items/${pathMatch[2]}.json`;
           const res = await fetch(apiUrl);
           const json = await res.json();
           if (Array.isArray(json.tags)) {
             items[i].tags = json.tags
-              .map(t => t && t.name ? t.name.trim() : '')
+              .map(t => (t && t.name ? t.name.trim() : ''))
               .filter(t => t);
           }
         } catch (e) {
