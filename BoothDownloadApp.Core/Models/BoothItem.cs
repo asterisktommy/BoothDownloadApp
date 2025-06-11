@@ -20,11 +20,17 @@ namespace BoothDownloadApp
         [JsonPropertyName("thumbnail")]
         public string Thumbnail { get; set; } = string.Empty;
 
+        [JsonPropertyName("itemUrl")]
+        public string ItemUrl { get; set; } = string.Empty;
+
         [JsonPropertyName("downloads")]
         public List<DownloadInfo> Downloads { get; set; } = new List<DownloadInfo>();
 
         [JsonPropertyName("tags")]
         public List<string> Tags { get; set; } = new List<string>();
+
+        [JsonPropertyName("tagsFetched")]
+        public bool TagsFetched { get; set; }
 
         public bool IsSelected
         {

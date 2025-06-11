@@ -127,15 +127,15 @@ namespace BoothDownloadApp
             // apply settings
             IsDarkMode = _settings.DarkMode;
             DownloadFolderPath = string.IsNullOrWhiteSpace(_settings.DownloadPath) ? "C:\\BoothData" : _settings.DownloadPath;
-            // 起動時に管理用JSONファイルから読み込み（なければ作成）
-            LoadManagementData();
+            // 起動後に管理用JSONを読み込む
+            Loaded += async (_, __) => await LoadManagementDataAsync();
         }
 
         /// <summary>
         /// 管理用JSONファイル（booth_manage.json）からデータを読み込み、Itemsに反映する。
         /// ファイルが存在しなければ空の内容で作成する。
         /// </summary>
-        private void LoadManagementData()
+        private async Task LoadManagementDataAsync()
         {
             if (!File.Exists(manageFilePath))
             {
@@ -166,7 +166,7 @@ namespace BoothDownloadApp
                         }
                     }
                     UpdateDownloadStatus();
-                    ApplyFilters();
+                    await FetchMissingTagsAsync();
                 }
             }
             catch (JsonException ex)
@@ -291,7 +291,7 @@ namespace BoothDownloadApp
             }
         }
 
-        private void LoadJsonData(object sender, RoutedEventArgs e)
+        private async void LoadJsonData(object sender, RoutedEventArgs e)
         {
             var dialog = new OpenFileDialog
             {
@@ -317,7 +317,7 @@ namespace BoothDownloadApp
                         Items.Add(item);
                     }
                     UpdateDownloadStatus();
-                    ApplyFilters();
+                    await FetchMissingTagsAsync();
                 }
 
                 MessageBox.Show("JSON データを読み込みました！", "情報", MessageBoxButton.OK, MessageBoxImage.Information);
@@ -345,6 +345,8 @@ namespace BoothDownloadApp
                 var item = await ProductFetcher.FetchItemAsync(url);
                 if (item != null)
                 {
+                    item.ItemUrl = url;
+                    item.TagsFetched = item.Tags.Count > 0;
                     Items.Add(item);
                     SaveManagementData();
                     UpdateDownloadStatus();
@@ -463,6 +465,39 @@ namespace BoothDownloadApp
             {
                 SelectedTag = "All";
             }
+        }
+
+        private async Task FetchMissingTagsAsync()
+        {
+            var targets = Items.Where(i => !i.TagsFetched && !string.IsNullOrWhiteSpace(i.ItemUrl)).ToList();
+            if (targets.Count == 0) return;
+
+            int index = 0;
+            int concurrency = 5;
+            var tasks = Enumerable.Range(0, concurrency).Select(async _ =>
+            {
+                while (true)
+                {
+                    BoothItem? item;
+                    lock (targets)
+                    {
+                        if (index >= targets.Count) return;
+                        item = targets[index++];
+                    }
+
+                    var fetched = await ProductFetcher.FetchItemAsync(item.ItemUrl);
+                    if (fetched != null)
+                    {
+                        item.Tags = fetched.Tags;
+                        item.TagsFetched = true;
+                    }
+                }
+            });
+
+            await Task.WhenAll(tasks);
+            UpdateAvailableTags();
+            ApplyFilters();
+            SaveManagementData();
         }
 
         private void ApplyFilters()
