@@ -16,7 +16,9 @@ all purchase and gift information to a JSON file.
    Item tags are now fetched concurrently for faster completion. The scraping
    logic lives in `scraper.js` which keeps the injected `content.js` minimal.
    The scripts are injected into the main page context so that tag fetching
-   can reuse your logged in session cookies without CORS errors.
+   can reuse your logged in session cookies without CORS errors. Tag requests
+   are always sent to `https://booth.pm` even when a shop uses its own
+   subdomain so that all product tags are retrieved correctly.
 
 The produced JSON file contains two arrays:
 
