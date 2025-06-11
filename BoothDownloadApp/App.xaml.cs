@@ -7,8 +7,6 @@ namespace BoothDownloadApp
         protected override void OnStartup(StartupEventArgs e)
         {
             base.OnStartup(e);
-            // ダークモードのデフォルト設定など
-            ThemeManager.ToggleDarkMode(false);
         }
     }
 }
