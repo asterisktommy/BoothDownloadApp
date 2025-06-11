@@ -84,7 +84,7 @@
           const pathMatch = url.pathname.match(/^\/(?:([a-z]{2})\/)?items\/(\d+)/);
           if (!pathMatch) continue;
           const lang = pathMatch[1] || 'ja';
-          const apiUrl = `https://booth.pm/${lang}/items/${pathMatch[2]}.json`;
+          const apiUrl = `${url.origin}/${lang}/items/${pathMatch[2]}.json`;
           const res = await fetch(apiUrl);
           const json = await res.json();
           if (Array.isArray(json.tags)) {
