@@ -7,5 +7,5 @@
   "action": {
     "default_popup": "popup.html"
   },
-  "host_permissions": ["https://booth.pm/*"]
+  "host_permissions": ["https://booth.pm/*", "https://*.booth.pm/*"]
 }
