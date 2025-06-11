@@ -7,7 +7,7 @@ all purchase and gift information to a JSON file.
 1. Load the extension from this folder (`chrome://extensions`, enable Developer Mode,
    then "Load unpacked").
 2. Navigate to your Booth library page after logging in
-   (`https://accounts.booth.pm/library` or `https://booth.pm/library`).
+   (usually `https://accounts.booth.pm/library`).
    The extension also works when started from the gifts page
    (`https://accounts.booth.pm/library/gifts`).
    If you see an error saying to open the page, make sure you are logged in and on the correct page.

@@ -1,6 +1,8 @@
 (() => {
   const sleep = ms => new Promise(res => setTimeout(res, ms));
-  const base = 'https://booth.pm';
+  // Use the current page's origin so the scraper works on
+  // both https://accounts.booth.pm and https://booth.pm
+  const base = location.origin;
 
   const fetchHtml = async url =>
     new Promise((resolve, reject) => {
