@@ -97,18 +97,30 @@ namespace BoothDownloadApp
                 return;
             }
 
+            var downloads = _files.Select(f => new BoothItem.DownloadInfo
+            {
+                FileName = System.IO.Path.GetFileName(f),
+                DownloadLink = string.Empty,
+                IsDownloaded = true
+            }).ToList();
+
+            if (!string.IsNullOrWhiteSpace(FileNameTextBox.Text) || !string.IsNullOrWhiteSpace(DownloadLinkTextBox.Text))
+            {
+                downloads.Add(new BoothItem.DownloadInfo
+                {
+                    FileName = FileNameTextBox.Text.Trim(),
+                    DownloadLink = DownloadLinkTextBox.Text.Trim(),
+                    IsDownloaded = false
+                });
+            }
+
             ResultItem = new BoothItem
             {
                 ProductName = ProductNameTextBox.Text,
                 ShopName = ShopNameTextBox.Text,
                 Tags = TagsTextBox.Text.Split(',', StringSplitOptions.RemoveEmptyEntries).Select(t => t.Trim()).ToList(),
-                Downloads = _files.Select(f => new BoothItem.DownloadInfo
-                {
-                    FileName = System.IO.Path.GetFileName(f),
-                    DownloadLink = string.Empty,
-                    IsDownloaded = true
-                }).ToList(),
-                IsDownloaded = true
+                Downloads = downloads,
+                IsDownloaded = downloads.All(d => d.IsDownloaded)
             };
 
             DialogResult = true;
