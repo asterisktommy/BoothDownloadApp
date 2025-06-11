@@ -307,24 +307,14 @@ namespace BoothDownloadApp
             try
             {
                 string json = File.ReadAllText(dialog.FileName);
-                var boothLibrary = JsonSerializer.Deserialize<BoothLibrary>(json, JsonSerializerOptions);
+                var items = JsonLoader.LoadItems(json, JsonSerializerOptions);
 
-                if (boothLibrary != null)
+                if (items != null)
                 {
                     Items.Clear();
-                    if (boothLibrary.Library != null)
+                    foreach (var item in items)
                     {
-                        foreach (var item in boothLibrary.Library)
-                        {
-                            Items.Add(item);
-                        }
-                    }
-                    if (boothLibrary.Gifts != null)
-                    {
-                        foreach (var item in boothLibrary.Gifts)
-                        {
-                            Items.Add(item);
-                        }
+                        Items.Add(item);
                     }
                     UpdateDownloadStatus();
                     ApplyFilters();
