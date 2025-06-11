@@ -1,4 +1,9 @@
+const progress = document.getElementById('progress');
+const status = document.getElementById('status');
+
 document.getElementById('start').addEventListener('click', async () => {
+  if (progress) progress.value = 0;
+  if (status) status.textContent = 'スクレイピング中...';
   const [tab] = await chrome.tabs.query({ active: true, currentWindow: true });
   await chrome.scripting.executeScript({
     target: { tabId: tab.id },
@@ -11,9 +16,6 @@ document.getElementById('start').addEventListener('click', async () => {
     world: 'MAIN'
   });
 });
-
-const progress = document.getElementById('progress');
-const status = document.getElementById('status');
 
 chrome.runtime.onMessage.addListener((msg) => {
   if (msg.action === 'progress' && progress && status) {

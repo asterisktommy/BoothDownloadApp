@@ -13,10 +13,8 @@ all purchase and gift information to a JSON file.
    If you see an error saying to open the page, make sure you are logged in and on the correct page.
 3. Click the extension icon to start scraping. It will fetch every page of the
    library and gift sections and then download `booth_library.json`.
-   Item tags are now fetched concurrently for faster completion. The scraping
-   logic lives in `scraper.js` which keeps the injected `content.js` minimal.
-   The scripts are injected into the main page context so that tag fetching
-   can reuse your logged in session cookies without CORS errors.
+   This extension no longer retrieves item tags. Tags are fetched automatically
+   inside the desktop app where you can filter and search by them.
 
 The produced JSON file contains two arrays:
 

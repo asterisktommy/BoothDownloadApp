@@ -38,6 +38,8 @@
                 <CheckBox Content="更新あり" Margin="0,0,0,5"
                           IsChecked="{Binding ShowOnlyUpdates}"
                           Checked="FilterChanged" Unchecked="FilterChanged"/>
+                <TextBlock Text="検索" Margin="0,10,0,0"/>
+                <TextBox Width="150" Margin="0,0,0,5" Text="{Binding SearchQuery, UpdateSourceTrigger=PropertyChanged}" TextChanged="FilterChanged"/>
             </StackPanel>
 
             <!-- アイテム一覧領域 -->
