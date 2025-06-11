@@ -11,17 +11,17 @@
 
         <StackPanel Grid.Row="0" Margin="0,0,0,10">
             <TextBlock Text="商品URL"/>
-            <TextBox x:Name="UrlTextBox" Width="400" Margin="0,0,0,5"/>
+            <TextBox x:Name="UrlTextBox" Width="400" Margin="0,0,0,5" TextChanged="UrlTextBox_TextChanged"/>
             <Button Content="情報取得" Width="80" Click="FetchInfo_Click"/>
         </StackPanel>
 
         <StackPanel Grid.Row="1" Margin="0,0,0,10">
             <TextBlock Text="商品名"/>
-            <TextBox x:Name="ProductNameTextBox" IsReadOnly="True"/>
+            <TextBox x:Name="ProductNameTextBox" />
             <TextBlock Text="ショップ名" Margin="0,5,0,0"/>
-            <TextBox x:Name="ShopNameTextBox" IsReadOnly="True"/>
+            <TextBox x:Name="ShopNameTextBox" />
             <TextBlock Text="タグ" Margin="0,5,0,0"/>
-            <TextBox x:Name="TagsTextBox" IsReadOnly="True"/>
+            <TextBox x:Name="TagsTextBox" />
             <Button Content="ファイル追加" Width="100" Margin="0,10,0,5" Click="AddFile_Click"/>
             <ListBox x:Name="FilesListBox" Height="100"/>
         </StackPanel>
