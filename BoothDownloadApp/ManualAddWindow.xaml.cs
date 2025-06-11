@@ -1,9 +1,11 @@
 using System;
 using System.Collections.Generic;
+using System.ComponentModel;
 using System.Linq;
 using System.Net.Http;
 using System.Text.Json;
 using System.Text.RegularExpressions;
+using System.Threading;
 using System.Threading.Tasks;
 using System.Windows;
 using Microsoft.Win32;
@@ -13,6 +15,8 @@ namespace BoothDownloadApp
     public partial class ManualAddWindow : Window
     {
         private readonly List<string> _files = new();
+        private CancellationTokenSource? _fetchCts;
+        private string _lastFetchedUrl = string.Empty;
         public BoothItem? ResultItem { get; private set; }
         public IReadOnlyList<string> SelectedFilePaths => _files;
 
@@ -23,7 +27,11 @@ namespace BoothDownloadApp
 
         private async void FetchInfo_Click(object sender, RoutedEventArgs e)
         {
-            var url = UrlTextBox.Text.Trim();
+            await FetchInfoAsync(UrlTextBox.Text.Trim());
+        }
+
+        private async Task FetchInfoAsync(string url)
+        {
             if (string.IsNullOrWhiteSpace(url)) return;
             try
             {
@@ -43,6 +51,30 @@ namespace BoothDownloadApp
             {
                 MessageBox.Show($"情報取得に失敗しました: {ex.Message}", "エラー", MessageBoxButton.OK, MessageBoxImage.Error);
             }
+        }
+
+        private async void UrlTextBox_TextChanged(object sender, System.Windows.Controls.TextChangedEventArgs e)
+        {
+            _fetchCts?.Cancel();
+            var url = UrlTextBox.Text.Trim();
+            if (string.IsNullOrWhiteSpace(url))
+            {
+                _lastFetchedUrl = string.Empty;
+                return;
+            }
+            _fetchCts = new CancellationTokenSource();
+            var token = _fetchCts.Token;
+            try
+            {
+                await Task.Delay(800, token);
+                if (token.IsCancellationRequested) return;
+                if (url != _lastFetchedUrl)
+                {
+                    await FetchInfoAsync(url);
+                    _lastFetchedUrl = url;
+                }
+            }
+            catch (TaskCanceledException) { }
         }
 
         private static async Task<ItemDetails?> FetchItemDetails(string url)
@@ -91,7 +123,7 @@ namespace BoothDownloadApp
         {
             if (string.IsNullOrWhiteSpace(ProductNameTextBox.Text) || string.IsNullOrWhiteSpace(ShopNameTextBox.Text))
             {
-                MessageBox.Show("情報を取得してください。", "エラー", MessageBoxButton.OK, MessageBoxImage.Error);
+                MessageBox.Show("商品名とショップ名を入力してください。", "エラー", MessageBoxButton.OK, MessageBoxImage.Error);
                 return;
             }
 
@@ -117,6 +149,12 @@ namespace BoothDownloadApp
         {
             DialogResult = false;
             Close();
+        }
+
+        protected override void OnClosing(CancelEventArgs e)
+        {
+            _fetchCts?.Cancel();
+            base.OnClosing(e);
         }
     }
 }
