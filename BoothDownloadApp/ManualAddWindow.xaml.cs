@@ -82,9 +82,8 @@ namespace BoothDownloadApp
             var m = Regex.Match(url, @"items/(\d+)");
             if (!m.Success) return null;
             string id = m.Groups[1].Value;
-            var langMatch = Regex.Match(url, @"/([a-z]{2})/items/");
-            string lang = langMatch.Success ? langMatch.Groups[1].Value : "ja";
-            string api = $"https://booth.pm/{lang}/items/{id}.json";
+            var uri = new Uri(url);
+            string api = $"{uri.Scheme}://{uri.Host}/items/{id}.json";
             using HttpClient client = new HttpClient();
             using var stream = await client.GetStreamAsync(api);
             using var doc = await JsonDocument.ParseAsync(stream);
