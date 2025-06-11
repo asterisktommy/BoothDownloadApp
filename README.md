@@ -30,8 +30,8 @@ The resulting executable will be under `BoothDownloadApp/bin/Debug/net8.0-window
 ## Chrome Extension Usage
 
 1. Open `chrome://extensions`, enable **Developer mode**, and choose **Load unpacked**. Select the `booth-scraper-extension` directory.
-2. While logged in to Booth, open your library page
-   (usually `https://accounts.booth.pm/library`).
+2. While logged in to Booth, visit your library page
+   (`https://accounts.booth.pm/library` or `https://booth.pm/library`).
    You can also start the extension from the gifts page
    (`https://accounts.booth.pm/library/gifts`).
    If you see an error about opening the page, ensure you are logged in and on the correct page.
