@@ -1,7 +1,13 @@
-document.getElementById("start").addEventListener("click", async () => {
+document.getElementById('start').addEventListener('click', async () => {
   const [tab] = await chrome.tabs.query({ active: true, currentWindow: true });
-  chrome.scripting.executeScript({
+  await chrome.scripting.executeScript({
     target: { tabId: tab.id },
-    files: ["content.js"]
+    files: ['scraper.js'],
+    world: 'MAIN'
+  });
+  await chrome.scripting.executeScript({
+    target: { tabId: tab.id },
+    files: ['content.js'],
+    world: 'MAIN'
   });
 });
