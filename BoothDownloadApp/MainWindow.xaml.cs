@@ -293,51 +293,47 @@ namespace BoothDownloadApp
 
         private void LoadJsonData(object sender, RoutedEventArgs e)
         {
-            string sourcePath = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.UserProfile), "Downloads", "booth_data.json");
-            string targetDirectory = "C:\\BoothData";
-            string targetPath = Path.Combine(targetDirectory, "booth_data.json");
+            var dialog = new OpenFileDialog
+            {
+                Filter = "JSON Files (*.json)|*.json|All Files (*.*)|*.*",
+                Title = "booth_data.json を選択してください"
+            };
+
+            if (dialog.ShowDialog() != true)
+            {
+                return;
+            }
 
             try
             {
-                if (File.Exists(sourcePath))
+                string json = File.ReadAllText(dialog.FileName);
+                var boothLibrary = JsonSerializer.Deserialize<BoothLibrary>(json, JsonSerializerOptions);
+
+                if (boothLibrary != null)
                 {
-                    if (!Directory.Exists(targetDirectory))
+                    Items.Clear();
+                    if (boothLibrary.Library != null)
                     {
-                        Directory.CreateDirectory(targetDirectory);
+                        foreach (var item in boothLibrary.Library)
+                        {
+                            Items.Add(item);
+                        }
                     }
-                    File.Copy(sourcePath, targetPath, true);
+                    if (boothLibrary.Gifts != null)
+                    {
+                        foreach (var item in boothLibrary.Gifts)
+                        {
+                            Items.Add(item);
+                        }
+                    }
+                    UpdateDownloadStatus();
+                    ApplyFilters();
                 }
 
-                if (File.Exists(targetPath))
-                {
-                    string json = File.ReadAllText(targetPath);
-                    var boothLibrary = JsonSerializer.Deserialize<BoothLibrary>(json, JsonSerializerOptions);
+                MessageBox.Show("JSON データを読み込みました！", "情報", MessageBoxButton.OK, MessageBoxImage.Information);
 
-                    if (boothLibrary != null)
-                    {
-                        Items.Clear();
-                        if (boothLibrary.Library != null)
-                        {
-                            foreach (var item in boothLibrary.Library)
-                            {
-                                Items.Add(item);
-                            }
-                        }
-                        if (boothLibrary.Gifts != null)
-                        {
-                            foreach (var item in boothLibrary.Gifts)
-                            {
-                                Items.Add(item);
-                            }
-                        }
-                        UpdateDownloadStatus();
-                        ApplyFilters();
-                    }
-                    MessageBox.Show("JSON データを読み込みました！", "情報", MessageBoxButton.OK, MessageBoxImage.Information);
-
-                    // 読み込み後、管理用JSONに保存して内容を反映
-                    SaveManagementData();
-                }
+                // 読み込み後、管理用JSONに保存して内容を反映
+                SaveManagementData();
             }
             catch (JsonException ex)
             {
