@@ -2,9 +2,7 @@ using System;
 using System.Collections.Generic;
 using System.ComponentModel;
 using System.Linq;
-using System.Net.Http;
-using System.Text.Json;
-using System.Text.RegularExpressions;
+
 using System.Threading;
 using System.Threading.Tasks;
 using System.Windows;
@@ -35,12 +33,12 @@ namespace BoothDownloadApp
             if (string.IsNullOrWhiteSpace(url)) return;
             try
             {
-                var details = await FetchItemDetails(url);
-                if (details != null)
+                var item = await ProductFetcher.FetchItemAsync(url);
+                if (item != null)
                 {
-                    ProductNameTextBox.Text = details.ProductName;
-                    ShopNameTextBox.Text = details.ShopName;
-                    TagsTextBox.Text = string.Join(", ", details.Tags);
+                    ProductNameTextBox.Text = item.ProductName;
+                    ShopNameTextBox.Text = item.ShopName;
+                    TagsTextBox.Text = string.Join(", ", item.Tags);
                 }
                 else
                 {
@@ -77,34 +75,6 @@ namespace BoothDownloadApp
             catch (TaskCanceledException) { }
         }
 
-        private static async Task<ItemDetails?> FetchItemDetails(string url)
-        {
-            var m = Regex.Match(url, @"items/(\d+)");
-            if (!m.Success) return null;
-            string id = m.Groups[1].Value;
-            var uri = new Uri(url);
-            string api = $"{uri.Scheme}://{uri.Host}/items/{id}.json";
-            using HttpClient client = new HttpClient();
-            using var stream = await client.GetStreamAsync(api);
-            using var doc = await JsonDocument.ParseAsync(stream);
-            var root = doc.RootElement;
-            string product = root.GetProperty("name").GetString() ?? string.Empty;
-            string shop = root.GetProperty("shop").GetProperty("name").GetString() ?? string.Empty;
-            List<string> tags = new();
-            if (root.TryGetProperty("tags", out var tagElem))
-            {
-                foreach (var t in tagElem.EnumerateArray())
-                {
-                    if (t.TryGetProperty("name", out var n))
-                    {
-                        tags.Add(n.GetString() ?? string.Empty);
-                    }
-                }
-            }
-            return new ItemDetails(product, shop, tags);
-        }
-
-        private record ItemDetails(string ProductName, string ShopName, List<string> Tags);
 
         private void AddFile_Click(object sender, RoutedEventArgs e)
         {
