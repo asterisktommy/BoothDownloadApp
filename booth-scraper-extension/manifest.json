@@ -3,7 +3,14 @@
   "name": "Booth Library Scraper",
   "version": "1.0",
   "description": "Boothの購入商品・ギフト情報を取得してJSONで保存",
-  "permissions": ["scripting", "activeTab"],
+  "permissions": [
+    "scripting",
+    "activeTab",
+    "downloads"
+  ],
+  "background": {
+    "service_worker": "background.js"
+  },
   "action": {
     "default_popup": "popup.html"
   },
