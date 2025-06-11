@@ -1,97 +1,89 @@
-async function fetchTags(url) {
-  try {
-    const html = await new Promise((resolve, reject) => {
-      chrome.runtime.sendMessage({ action: 'fetch-html', url }, (res) => {
-        if (chrome.runtime.lastError) {
-          reject(chrome.runtime.lastError);
-        } else if (!res || !res.success) {
-          reject(new Error(res?.error || 'Failed to fetch'));
-        } else {
-          resolve(res.text);
-        }
+(async () => {
+  const sleep = ms => new Promise(res => setTimeout(res, ms));
+  const base = "https://booth.pm";
+
+  const updateProgress = (text, value, max) => {
+    const progress = document.getElementById("progress");
+    const status = document.getElementById("status");
+    if (progress && status) {
+      progress.max = max;
+      progress.value = value;
+      status.textContent = `${text} (${value}/${max})`;
+    }
+  };
+
+  const extractProducts = (html) => {
+    const doc = new DOMParser().parseFromString(html, "text/html");
+    const productBlocks = doc.querySelectorAll("div.mb-16.bg-white");
+    const result = [];
+
+    for (const block of productBlocks) {
+      const title = block.querySelector("div.font-bold")?.innerText.trim() || "";
+      const itemUrl = block.querySelector("a[href*='/items/']")?.href || "";
+      const imageUrl = block.querySelector("img.l-library-item-thumbnail")?.src || "";
+      const shopAnchor = block.querySelector("a[href*='.booth.pm']");
+      const shopName = shopAnchor?.querySelector("div.typography-14")?.innerText.trim() || "";
+      const shopUrl = shopAnchor?.href || "";
+
+      const fileBlocks = block.querySelectorAll("div.desktop\\:justify-between");
+      const files = Array.from(fileBlocks).map(fileBlock => {
+        const fileName = fileBlock.querySelector("div.typography-14")?.innerText.trim() || "";
+        const downloadUrl = fileBlock.querySelector("a[href*='/downloadables/']")?.href || "";
+        return { fileName, downloadUrl };
       });
-    });
-    const doc = new DOMParser().parseFromString(html, 'text/html');
-    return Array.from(doc.querySelectorAll('#js-item-tag-list a div'))
-      .map(el => el.textContent.trim())
-      .filter(t => t.length > 0);
-  } catch (e) {
-    console.error('Failed to fetch tags', e);
-    return [];
-  }
-}
 
-async function parsePage(doc) {
-  const items = [];
-  const cards = doc.querySelectorAll('div.mb-16.bg-white');
-  for (const card of cards) {
-    const productName = card.querySelector('a[target="_blank"] div.font-bold')?.textContent.trim() || '';
-    const shopName = card.querySelector('a[target="_blank"] + a div.typography-14')?.textContent.trim() || '';
-    const thumbnail = card.querySelector('a[target="_blank"] img')?.src || '';
-    const productLink = card.querySelector('a[target="_blank"]')?.href || '';
-    const downloads = [];
-    card.querySelectorAll('div.mt-16.desktop\\:flex').forEach(row => {
-      const fileName = row.querySelector('div.typography-14')?.textContent.trim() || '';
-      const link = row.querySelector('a[href*="downloadables"]')?.href || '';
-      if (fileName && link) downloads.push({ fileName, downloadLink: link });
-    });
-    let tags = [];
-    if (productLink) {
-      tags = await fetchTags(productLink);
+      result.push({
+        title, itemUrl, imageUrl,
+        shopName, shopUrl,
+        files, tags: []
+      });
     }
-    if (productName) items.push({ productName, shopName, thumbnail, downloads, tags });
-  }
-  return items;
-}
 
-async function scrapeSection(path) {
-  let page = 1;
-  let all = [];
-  const useCurrent = location.pathname === path;
-  while (true) {
-    const url = `${path}?page=${page}`;
-    let html;
-    if (page === 1 && useCurrent) {
-      html = document.documentElement.outerHTML;
-    } else {
-      html = await fetch(url, { credentials: 'include' }).then(r => r.text());
+    return result;
+  };
+
+  const getAllPages = async (path) => {
+    let page = 1, all = [];
+    while (true) {
+      const url = `${base}${path}?page=${page}`;
+      const res = await fetch(url);
+      const html = await res.text();
+      const products = extractProducts(html);
+      if (products.length === 0) break;
+      all.push(...products);
+      page++;
+      await sleep(300);
     }
-    const doc = page === 1 && useCurrent ? document : new DOMParser().parseFromString(html, 'text/html');
-    const items = await parsePage(doc);
-    all = all.concat(items);
-    const next = doc.querySelector('.pager nav ul li a[rel="next"]');
-    if (!next) break;
-    page++;
-  }
-  return all;
-}
+    return all;
+  };
 
-async function scrapeAll() {
-  try {
-    const library = await scrapeSection('/library');
-    const gifts = await scrapeSection('/library/gifts');
-    const data = JSON.stringify({ library, gifts }, null, 2);
-    chrome.runtime.sendMessage({ action: 'download-json', data });
-    chrome.runtime.sendMessage({ action: 'notify', type: 'complete' });
-  } catch (e) {
-    console.error('Scrape failed', e);
-    chrome.runtime.sendMessage({
-      action: 'notify',
-      type: 'error',
-      message: e.message || 'Unexpected error'
-    });
-  }
-}
+  const getTags = async (items) => {
+    for (let i = 0; i < items.length; i++) {
+      updateProgress("タグ取得中", i + 1, items.length);
+      try {
+        const res = await fetch(items[i].itemUrl);
+        const html = await res.text();
+        const doc = new DOMParser().parseFromString(html, "text/html");
+        const tagEls = doc.querySelectorAll("a[href*='/items?tags']");
+        items[i].tags = Array.from(tagEls).map(el => el.textContent.trim());
+      } catch (e) {
+        console.warn("タグ取得失敗", items[i].itemUrl, e);
+      }
+      await sleep(400);
+    }
+  };
 
-chrome.runtime.onMessage.addListener((msg, sender, sendResponse) => {
-  if (msg.action === 'start-scrape') {
-    scrapeAll()
-      .then(() => sendResponse('done'))
-      .catch(() => sendResponse('error'));
-    return true; // <- 非同期応答なのでポートを開けておく
-  }
+  const all = [
+    ...(await getAllPages("/library")),
+    ...(await getAllPages("/library/gifts"))
+  ];
 
-  if (msg.action === 'ping') {
-    sendResponse('pong');       // ここで即答する
-  }
-});
+  updateProgress("商品タグ取得準備中", 0, all.length);
+  await getTags(all);
+
+  const blob = new Blob([JSON.stringify(all, null, 2)], { type: "application/json" });
+  const a = document.createElement("a");
+  a.href = URL.createObjectURL(blob);
+  a.download = "booth_library_export.json";
+  a.click();
+})();
