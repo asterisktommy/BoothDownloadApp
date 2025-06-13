@@ -23,9 +23,11 @@ namespace BoothDownloadApp
             foreach (var entry in fileList)
             {
                 token.ThrowIfCancellationRequested();
-                string folder = Path.Combine(rootPath, entry.item.ShopName, entry.item.ProductName);
+                string folder = Path.Combine(rootPath,
+                    PathUtils.Sanitize(entry.item.ShopName),
+                    PathUtils.Sanitize(entry.item.ProductName));
                 Directory.CreateDirectory(folder);
-                string path = Path.Combine(folder, entry.file.FileName);
+                string path = Path.Combine(folder, PathUtils.Sanitize(entry.file.FileName));
                 int attempts = 0;
                 while (true)
                 {
@@ -39,7 +41,7 @@ namespace BoothDownloadApp
                         entry.file.IsDownloaded = true;
                         downloaded++;
                         progress?.Report((int)((double)downloaded / totalFiles * 100));
-                        db.SaveHistoryItem(entry.file.FileName, entry.file.DownloadLink);
+                        db.SaveHistoryItem(PathUtils.Sanitize(entry.file.FileName), entry.file.DownloadLink);
                         break;
                     }
                     catch (OperationCanceledException)
