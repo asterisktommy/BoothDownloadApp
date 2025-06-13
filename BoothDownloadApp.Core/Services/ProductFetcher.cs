@@ -26,7 +26,9 @@ namespace BoothDownloadApp
                 {
                     ProductName = root.GetProperty("name").GetString() ?? string.Empty,
                     ShopName = root.GetProperty("shop").GetProperty("name").GetString() ?? string.Empty,
-                    Thumbnail = root.GetProperty("images")[0].GetProperty("resized").GetString() ?? string.Empty
+                    Thumbnail = root.GetProperty("images")[0].GetProperty("resized").GetString() ?? string.Empty,
+                    ItemUrl = root.GetProperty("url").GetString() ?? url,
+                    ShopUrl = root.GetProperty("shop").GetProperty("url").GetString() ?? string.Empty
                 };
                 if (root.TryGetProperty("tags", out var tags))
                 {

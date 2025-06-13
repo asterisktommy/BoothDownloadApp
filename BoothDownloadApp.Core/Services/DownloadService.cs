@@ -39,6 +39,7 @@ namespace BoothDownloadApp
                         await response.Content.CopyToAsync(fs, token);
 
                         entry.file.IsDownloaded = true;
+                        entry.file.IsSelected = false;
                         downloaded++;
                         progress?.Report((int)((double)downloaded / totalFiles * 100));
                         db.SaveHistoryItem(PathUtils.Sanitize(entry.file.FileName), entry.file.DownloadLink);
@@ -63,6 +64,7 @@ namespace BoothDownloadApp
             foreach (var i in items)
             {
                 i.IsDownloaded = i.Downloads.All(d => d.IsDownloaded);
+                i.IsSelected = false;
             }
         }
     }

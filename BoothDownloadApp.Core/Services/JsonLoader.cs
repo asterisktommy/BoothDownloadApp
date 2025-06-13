@@ -38,6 +38,7 @@ namespace BoothDownloadApp
                         ShopName = si.ShopName,
                         Thumbnail = si.ImageUrl,
                         ItemUrl = si.ItemUrl,
+                        ShopUrl = si.ShopUrl,
                         Downloads = si.Files.Select(f => new BoothItem.DownloadInfo
                         {
                             FileName = f.FileName,

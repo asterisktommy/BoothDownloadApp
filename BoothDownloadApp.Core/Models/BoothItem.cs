@@ -23,6 +23,9 @@ namespace BoothDownloadApp
         [JsonPropertyName("itemUrl")]
         public string ItemUrl { get; set; } = string.Empty;
 
+        [JsonPropertyName("shopUrl")]
+        public string ShopUrl { get; set; } = string.Empty;
+
         [JsonPropertyName("downloads")]
         public List<DownloadInfo> Downloads { get; set; } = new List<DownloadInfo>();
 
