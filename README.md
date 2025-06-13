@@ -17,6 +17,13 @@ dotnet build BoothDownloadApp.sln
 
 The resulting executable will be under `BoothDownloadApp/bin/Debug/net8.0-windows/` (or `Release` depending on configuration).
 
+To publish a self-contained build from Visual Studio:
+
+1. Right-click **BoothDownloadApp** and choose **Publish**.
+2. Select **Folder** as the target and create the profile.
+3. Set **Deployment Mode** to **Self-contained** and pick the runtime (e.g. `win-x64`).
+4. Click **Publish**. The `publish` folder will contain `BoothDownloadApp.exe` and all required files.
+
 ## WPF Application Usage
 
 1. Launch `BoothDownloadApp.exe` from the build output or run `dotnet run --project BoothDownloadApp/BoothDownloadApp.csproj`.
