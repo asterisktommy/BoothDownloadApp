@@ -425,7 +425,11 @@ namespace BoothDownloadApp
             {
                 foreach (var download in item.Downloads)
                 {
-                    string path = Path.Combine(DownloadFolderPath, item.ShopName, item.ProductName, download.FileName);
+                    string path = Path.Combine(
+                        DownloadFolderPath,
+                        PathUtils.Sanitize(item.ShopName),
+                        PathUtils.Sanitize(item.ProductName),
+                        PathUtils.Sanitize(download.FileName));
                     download.IsDownloaded = File.Exists(path);
                 }
                 item.IsDownloaded = item.Downloads.All(d => d.IsDownloaded);
@@ -549,7 +553,11 @@ namespace BoothDownloadApp
                 var item = window.ResultItem;
                 foreach (var path in window.SelectedFilePaths)
                 {
-                    string dest = Path.Combine(DownloadFolderPath, item.ShopName, item.ProductName, Path.GetFileName(path));
+                    string dest = Path.Combine(
+                        DownloadFolderPath,
+                        PathUtils.Sanitize(item.ShopName),
+                        PathUtils.Sanitize(item.ProductName),
+                        PathUtils.Sanitize(Path.GetFileName(path)));
                     Directory.CreateDirectory(Path.GetDirectoryName(dest)!);
                     try
                     {
