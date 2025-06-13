@@ -232,7 +232,6 @@ namespace BoothDownloadApp
                 return;
             }
 
-            // 選択された商品を取得
             var selectedItems = Items.Where(item => item.IsSelected || item.Downloads.Any(d => d.IsSelected)).ToList();
 
             if (selectedItems.Count == 0)
@@ -241,71 +240,58 @@ namespace BoothDownloadApp
                 return;
             }
 
-            // ダウンロード処理の開始
-            Progress = 0;
-            int totalFiles = selectedItems.Sum(item => item.Downloads.Count(d => d.IsSelected));
+            await StartDownloadAsync(selectedItems, d => d.IsSelected);
+        }
+
+        private async void DownloadAllNotDownloaded(object sender, RoutedEventArgs e)
+        {
+            if (_isDownloading)
+            {
+                MessageBox.Show("既にダウンロード処理が実行されています。", "情報", MessageBoxButton.OK, MessageBoxImage.Information);
+                return;
+            }
 
             UpdateDownloadStatus();
+            var targetItems = Items.Where(i => i.Downloads.Any(d => !d.IsDownloaded)).ToList();
 
-            using HttpClient httpClient = new HttpClient();
-            int downloadedFiles = 0;
+            if (targetItems.Count == 0)
+            {
+                MessageBox.Show("未ダウンロードのアイテムはありません。", "情報", MessageBoxButton.OK, MessageBoxImage.Information);
+                return;
+            }
+
+            await StartDownloadAsync(targetItems, d => !d.IsDownloaded);
+        }
+
+        private async Task StartDownloadAsync(List<BoothItem> items, Func<BoothItem.DownloadInfo, bool> fileSelector)
+        {
+            Progress = 0;
             _cts = new CancellationTokenSource();
             var token = _cts.Token;
             _isDownloading = true;
 
-            foreach (var item in selectedItems)
+            try
             {
-                string shopFolder = Path.Combine(DownloadFolderPath, item.ShopName);
-                string productFolder = Path.Combine(shopFolder, item.ProductName);
-
-                // フォルダを作成
-                Directory.CreateDirectory(productFolder);
-
-                foreach (var file in item.Downloads.Where(d => d.IsSelected))
-                {
-                    string filePath = Path.Combine(productFolder, file.FileName);
-
-                    int attempts = 0;
-                    while (true)
-                    {
-                        try
-                        {
-                            using HttpResponseMessage response = await httpClient.GetAsync(file.DownloadLink, token);
-                            response.EnsureSuccessStatusCode();
-                            await using FileStream fs = new FileStream(filePath, FileMode.Create, FileAccess.Write, FileShare.None);
-                            await response.Content.CopyToAsync(fs, token);
-
-                            downloadedFiles++;
-                            Progress = (int)((double)downloadedFiles / totalFiles * 100);
-                            file.IsDownloaded = true;
-                            _dbManager.SaveHistoryItem(file.FileName, file.DownloadLink);
-                            break;
-                        }
-                        catch (OperationCanceledException)
-                        {
-                            MessageBox.Show("ダウンロードをキャンセルしました。", "情報", MessageBoxButton.OK, MessageBoxImage.Information);
-                            return;
-                        }
-                        catch (Exception ex)
-                        {
-                            attempts++;
-                            if (attempts > _settings.RetryCount)
-                            {
-                                MessageBox.Show($"ダウンロード失敗: {file.FileName}\n{ex.Message}", "エラー", MessageBoxButton.OK, MessageBoxImage.Error);
-                                break;
-                            }
-                            await Task.Delay(1000, token);
-                        }
-                    }
-                }
-                item.IsDownloaded = item.Downloads.All(d => d.IsDownloaded);
+                await DownloadService.DownloadItemsAsync(
+                    items,
+                    fileSelector,
+                    DownloadFolderPath,
+                    _settings.RetryCount,
+                    _dbManager,
+                    new Progress<int>(p => Progress = p),
+                    token);
+                MessageBox.Show("ダウンロードが完了しました！", "情報", MessageBoxButton.OK, MessageBoxImage.Information);
             }
-            _isDownloading = false;
-            _cts = null;
-            MessageBox.Show("ダウンロードが完了しました！", "情報", MessageBoxButton.OK, MessageBoxImage.Information);
+            catch (OperationCanceledException)
+            {
+                MessageBox.Show("ダウンロードをキャンセルしました。", "情報", MessageBoxButton.OK, MessageBoxImage.Information);
+            }
+            finally
+            {
+                _isDownloading = false;
+                _cts = null;
+            }
         }
-
-
 
         private void StopDownload(object sender, RoutedEventArgs e)
         {
