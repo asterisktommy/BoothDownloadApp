@@ -54,15 +54,38 @@
                                 <DataTemplate>
                                     <StackPanel Orientation="Horizontal">
                                         <!-- 商品単位のチェックボックス -->
-                                        <CheckBox IsChecked="{Binding IsSelected, Mode=TwoWay}" 
+                                        <CheckBox IsChecked="{Binding IsSelected, Mode=TwoWay}"
                           VerticalAlignment="Center" Margin="0,0,5,0"/>
-                                        <TextBlock Text="{Binding ProductName}" VerticalAlignment="Center"/>
+                                        <TextBlock Text="{Binding ProductName}"
+                                                   Foreground="Blue"
+                                                   Cursor="Hand"
+                                                   VerticalAlignment="Center">
+                                            <TextBlock.InputBindings>
+                                                <MouseBinding Gesture="LeftClick"
+                                                              Command="{Binding DataContext.OpenLinkCommand, RelativeSource={RelativeSource AncestorType=Window}}"
+                                                              CommandParameter="{Binding ItemUrl}"/>
+                                            </TextBlock.InputBindings>
+                                        </TextBlock>
                                     </StackPanel>
                                 </DataTemplate>
                             </GridViewColumn.CellTemplate>
                         </GridViewColumn>
 
-                        <GridViewColumn Header="ショップ名" Width="150" DisplayMemberBinding="{Binding ShopName}" />
+                        <GridViewColumn Header="ショップ名" Width="150">
+                            <GridViewColumn.CellTemplate>
+                                <DataTemplate>
+                                    <TextBlock Text="{Binding ShopName}"
+                                               Foreground="Blue"
+                                               Cursor="Hand">
+                                        <TextBlock.InputBindings>
+                                            <MouseBinding Gesture="LeftClick"
+                                                          Command="{Binding DataContext.OpenLinkCommand, RelativeSource={RelativeSource AncestorType=Window}}"
+                                                          CommandParameter="{Binding ShopUrl}"/>
+                                        </TextBlock.InputBindings>
+                                    </TextBlock>
+                                </DataTemplate>
+                            </GridViewColumn.CellTemplate>
+                        </GridViewColumn>
                         <GridViewColumn Header="サムネイル" Width="100">
                             <GridViewColumn.CellTemplate>
                                 <DataTemplate>

@@ -15,6 +15,7 @@ namespace BoothDownloadApp
         private readonly List<string> _files = new();
         private CancellationTokenSource? _fetchCts;
         private string _lastFetchedUrl = string.Empty;
+        private string _shopUrl = string.Empty;
         public BoothItem? ResultItem { get; private set; }
         public IReadOnlyList<string> SelectedFilePaths => _files;
 
@@ -38,6 +39,7 @@ namespace BoothDownloadApp
                 {
                     ProductNameTextBox.Text = item.ProductName;
                     ShopNameTextBox.Text = item.ShopName;
+                    _shopUrl = item.ShopUrl;
                     TagsTextBox.Text = string.Join(", ", item.Tags);
                 }
                 else
@@ -58,6 +60,7 @@ namespace BoothDownloadApp
             if (string.IsNullOrWhiteSpace(url))
             {
                 _lastFetchedUrl = string.Empty;
+                _shopUrl = string.Empty;
                 return;
             }
             _fetchCts = new CancellationTokenSource();
@@ -118,6 +121,7 @@ namespace BoothDownloadApp
             {
                 ProductName = ProductNameTextBox.Text,
                 ShopName = ShopNameTextBox.Text,
+                ShopUrl = _shopUrl,
                 ItemUrl = UrlTextBox.Text.Trim(),
                 Tags = TagsTextBox.Text.Split(',', StringSplitOptions.RemoveEmptyEntries).Select(t => t.Trim()).ToList(),
                 Downloads = downloads,
