@@ -22,6 +22,7 @@ The resulting executable will be under `BoothDownloadApp/bin/Debug/net8.0-window
 1. Launch `BoothDownloadApp.exe` from the build output or run `dotnet run --project BoothDownloadApp/BoothDownloadApp.csproj`.
 2. Click **"📥 JSON 読み込み"** and choose your `booth_data.json` file.
 3. Choose a download folder with **"📂選択"** and start downloading with **"⬇️ ダウンロード開始"**. Use **"⏸ 停止"** to cancel.
+   To download all undownloaded files at once, press **"⬇️ 未DL一括"**.
 4. Downloaded files are organized under the selected folder by shop and product name. The app keeps management data in `booth_manage.json` next to the executable.
 5. Use the filter panel to narrow items by tag, hide downloaded items or show only those with updates. A search box lets you filter by keyword across names, shops and tags.
 6. Use **"＋ 手動追加"** to register items yourself. Pasting a product URL automatically fetches the name, shop and tags. You can still press **"情報取得"** to retry or type details manually. Local files may be attached and copied into your download folder.

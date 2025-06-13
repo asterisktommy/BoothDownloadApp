@@ -123,6 +123,7 @@
             <Button Content="＋ 手動追加" Width="80" Margin="5" Click="OpenManualAdd"/>
 
             <Button Content="⬇️ ダウンロード開始" Width="120" Margin="5" Click="StartDownload"/>
+            <Button Content="⬇️ 未DL一括" Width="120" Margin="5" Click="DownloadAllNotDownloaded"/>
             <Button Content="⏸ 停止" Width="80" Margin="5" Click="StopDownload"/>
             
             <!-- 進捗バーを横幅いっぱいに配置 -->

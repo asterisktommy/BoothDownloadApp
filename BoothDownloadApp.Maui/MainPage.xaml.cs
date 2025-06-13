@@ -4,9 +4,9 @@ using System.Text.Json;
 using Microsoft.Maui.Controls;
 using Microsoft.Maui.Storage;
 using BoothDownloadApp;
-using System.Net.Http;
 using System.IO;
 using System.Linq;
+using System.Threading;
 
 namespace BoothDownloadApp.Maui
 {
@@ -65,28 +65,23 @@ namespace BoothDownloadApp.Maui
                 return;
             }
             string root = FileSystem.Current.AppDataDirectory;
-            using HttpClient client = new HttpClient();
-            foreach (var item in selected)
+            var db = new DatabaseManager(Path.Combine(root, "download_history.db"));
+            try
             {
-                string productDir = Path.Combine(root, item.ShopName, item.ProductName);
-                Directory.CreateDirectory(productDir);
-                foreach (var dl in item.Downloads.Where(d => d.IsSelected))
-                {
-                    try
-                    {
-                        string path = Path.Combine(productDir, dl.FileName);
-                        using var response = await client.GetAsync(dl.DownloadLink);
-                        response.EnsureSuccessStatusCode();
-                        await using var fs = File.OpenWrite(path);
-                        await response.Content.CopyToAsync(fs);
-                    }
-                    catch (Exception ex)
-                    {
-                        await DisplayAlert("Download failed", ex.Message, "OK");
-                    }
-                }
+                await DownloadService.DownloadItemsAsync(
+                    selected,
+                    d => d.IsSelected,
+                    root,
+                    3,
+                    db,
+                    null,
+                    CancellationToken.None);
+                await DisplayAlert("Done", "Downloads completed", "OK");
             }
-            await DisplayAlert("Done", "Downloads completed", "OK");
+            catch (Exception ex)
+            {
+                await DisplayAlert("Download failed", ex.Message, "OK");
+            }
         }
     }
 }
