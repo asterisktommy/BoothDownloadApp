@@ -8,11 +8,8 @@ button {
   padding: 10px;
   margin-bottom: 10px;
 }
-#progress-container {
+#status-container {
   display: flex;
   flex-direction: column;
   gap: 5px;
-}
-progress {
-  width: 100%;
 }

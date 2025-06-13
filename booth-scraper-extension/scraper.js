@@ -2,11 +2,6 @@
   const sleep = ms => new Promise(res => setTimeout(res, ms));
   const base = location.origin;
 
-  const updateProgress = (text, value, max) => {
-    if (typeof chrome !== 'undefined' && chrome.runtime) {
-      chrome.runtime.sendMessage({ action: 'progress', text, value, max });
-    }
-  };
 
 
   const extractProducts = html => {
@@ -42,16 +37,11 @@
       const res = await fetch(url);
       const html = await res.text();
       const products = extractProducts(html);
-      if (products.length === 0) {
-        updateProgress('ページ取得中', page - 1, page - 1);
-        break;
-      }
+      if (products.length === 0) break;
       all.push(...products);
-      updateProgress('ページ取得中', page, page + 1);
       page++;
       await sleep(300);
     }
-    updateProgress('ページ取得完了', page - 1, page - 1);
     return all;
   };
 
@@ -60,7 +50,6 @@
       ...(await getAllPages('/library')),
       ...(await getAllPages('/library/gifts'))
     ];
-    updateProgress('書き出し中', 0, 1);
     return all;
   };
 
