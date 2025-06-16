@@ -36,7 +36,8 @@ namespace BoothDownloadApp
                 DownloadPath = "C:\\BoothData",
                 RetryCount = 3,
                 FavoriteTags = new List<string>(),
-                FavoriteFolders = DefaultFolders()
+                FavoriteFolders = DefaultFolders(),
+                AutoExtractZip = false
             };
         }
 

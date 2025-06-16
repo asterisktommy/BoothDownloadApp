@@ -185,7 +185,9 @@
             <Button Content="⬇️ ダウンロード開始" Width="120" Margin="5" Click="StartDownload"/>
             <Button Content="⬇️ 未DL一括" Width="120" Margin="5" Click="DownloadAllNotDownloaded"/>
             <Button Content="⏸ 停止" Width="80" Margin="5" Click="StopDownload"/>
-            
+
+            <CheckBox Content="ZIP自動解凍" Margin="5" VerticalAlignment="Center" IsChecked="{Binding AutoExtractZip}"/>
+
             <!-- 進捗バーを横幅いっぱいに配置 -->
             <ProgressBar x:Name="DownloadProgress" Height="20" Margin="20,0,10,0" VerticalAlignment="Center"
                          Minimum="0" Maximum="100" Width="200"
