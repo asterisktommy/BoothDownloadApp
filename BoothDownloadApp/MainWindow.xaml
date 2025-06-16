@@ -41,12 +41,48 @@
                           IsChecked="{Binding ShowOnlyFavorites}"
                           Checked="FilterChanged" Unchecked="FilterChanged"/>
                 <Button Content="☆ 設定" Width="100" Margin="0,0,0,5" Click="OpenFavoritesSetting"/>
+                <Button Content="📁 フォルダ設定" Width="120" Margin="0,0,0,5" Click="OpenFavoriteFolderSetting"/>
+                <TabControl Margin="0,5,0,5" SelectedIndex="{Binding SelectedFavoriteFolderIndex}">
+                    <TabItem Header="All" />
+                    <TabItem Header="{Binding FavoriteFolderNames[0]}" />
+                    <TabItem Header="{Binding FavoriteFolderNames[1]}" />
+                    <TabItem Header="{Binding FavoriteFolderNames[2]}" />
+                    <TabItem Header="{Binding FavoriteFolderNames[3]}" />
+                    <TabItem Header="{Binding FavoriteFolderNames[4]}" />
+                    <TabItem Header="{Binding FavoriteFolderNames[5]}" />
+                    <TabItem Header="{Binding FavoriteFolderNames[6]}" />
+                    <TabItem Header="{Binding FavoriteFolderNames[7]}" />
+                    <TabItem Header="{Binding FavoriteFolderNames[8]}" />
+                    <TabItem Header="{Binding FavoriteFolderNames[9]}" />
+                </TabControl>
                 <TextBlock Text="検索" Margin="0,10,0,0"/>
                 <TextBox Width="150" Margin="0,0,0,5" Text="{Binding SearchQuery, UpdateSourceTrigger=PropertyChanged}" TextChanged="FilterChanged"/>
             </StackPanel>
 
             <!-- アイテム一覧領域 -->
             <ListView x:Name="itemsListView" Grid.Column="1" Margin="5" ItemsSource="{Binding Items}" SelectionChanged="ListView_SelectionChanged">
+                <ListView.ItemContainerStyle>
+                    <Style TargetType="ListViewItem">
+                        <Setter Property="ContextMenu">
+                            <Setter.Value>
+                                <ContextMenu>
+                                    <MenuItem Header="フォルダ解除" Click="ClearFavoriteFolder" CommandParameter="{Binding}"/>
+                                    <Separator/>
+                                    <MenuItem Header="{Binding DataContext.FavoriteFolderNames[0], RelativeSource={RelativeSource AncestorType=Window}}" Tag="0" Click="SetFavoriteFolder" CommandParameter="{Binding}"/>
+                                    <MenuItem Header="{Binding DataContext.FavoriteFolderNames[1], RelativeSource={RelativeSource AncestorType=Window}}" Tag="1" Click="SetFavoriteFolder" CommandParameter="{Binding}"/>
+                                    <MenuItem Header="{Binding DataContext.FavoriteFolderNames[2], RelativeSource={RelativeSource AncestorType=Window}}" Tag="2" Click="SetFavoriteFolder" CommandParameter="{Binding}"/>
+                                    <MenuItem Header="{Binding DataContext.FavoriteFolderNames[3], RelativeSource={RelativeSource AncestorType=Window}}" Tag="3" Click="SetFavoriteFolder" CommandParameter="{Binding}"/>
+                                    <MenuItem Header="{Binding DataContext.FavoriteFolderNames[4], RelativeSource={RelativeSource AncestorType=Window}}" Tag="4" Click="SetFavoriteFolder" CommandParameter="{Binding}"/>
+                                    <MenuItem Header="{Binding DataContext.FavoriteFolderNames[5], RelativeSource={RelativeSource AncestorType=Window}}" Tag="5" Click="SetFavoriteFolder" CommandParameter="{Binding}"/>
+                                    <MenuItem Header="{Binding DataContext.FavoriteFolderNames[6], RelativeSource={RelativeSource AncestorType=Window}}" Tag="6" Click="SetFavoriteFolder" CommandParameter="{Binding}"/>
+                                    <MenuItem Header="{Binding DataContext.FavoriteFolderNames[7], RelativeSource={RelativeSource AncestorType=Window}}" Tag="7" Click="SetFavoriteFolder" CommandParameter="{Binding}"/>
+                                    <MenuItem Header="{Binding DataContext.FavoriteFolderNames[8], RelativeSource={RelativeSource AncestorType=Window}}" Tag="8" Click="SetFavoriteFolder" CommandParameter="{Binding}"/>
+                                    <MenuItem Header="{Binding DataContext.FavoriteFolderNames[9], RelativeSource={RelativeSource AncestorType=Window}}" Tag="9" Click="SetFavoriteFolder" CommandParameter="{Binding}"/>
+                                </ContextMenu>
+                            </Setter.Value>
+                        </Setter>
+                    </Style>
+                </ListView.ItemContainerStyle>
                 <ListView.View>
                     <GridView>
                         <GridViewColumn Header="商品名" Width="200">
@@ -101,6 +137,7 @@
                                 </DataTemplate>
                             </GridViewColumn.CellTemplate>
                         </GridViewColumn>
+                        <GridViewColumn Header="フォルダ" Width="100" DisplayMemberBinding="{Binding CopiedFavoriteFolderName}" />
                         <GridViewColumn Header="ダウンロードファイル" Width="300">
                             <GridViewColumn.CellTemplate>
                                 <DataTemplate>

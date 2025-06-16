@@ -20,6 +20,10 @@ namespace BoothDownloadApp
                     var settings = JsonSerializer.Deserialize<Settings>(json, JsonOptions);
                     if (settings != null)
                     {
+                        if (settings.FavoriteFolders == null || settings.FavoriteFolders.Length != 10)
+                        {
+                            settings.FavoriteFolders = DefaultFolders();
+                        }
                         return settings;
                     }
                 }
@@ -28,7 +32,12 @@ namespace BoothDownloadApp
             {
                 // ignore and fall back to defaults
             }
-            return new Settings { DownloadPath = "C:\\BoothData", RetryCount = 3, FavoriteTags = new List<string>() };
+            return new Settings {
+                DownloadPath = "C:\\BoothData",
+                RetryCount = 3,
+                FavoriteTags = new List<string>(),
+                FavoriteFolders = DefaultFolders()
+            };
         }
 
         public static void Save(Settings settings)
@@ -42,6 +51,16 @@ namespace BoothDownloadApp
             {
                 // ignore save errors
             }
+        }
+
+        private static string[] DefaultFolders()
+        {
+            var arr = new string[10];
+            for (int i = 0; i < arr.Length; i++)
+            {
+                arr[i] = $"Favorite{i + 1}";
+            }
+            return arr;
         }
     }
 }

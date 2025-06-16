@@ -8,7 +8,7 @@ namespace BoothDownloadApp
     /// </summary>
     public static class FilterManager
     {
-        public static bool Matches(BoothItem item, bool showOnlyNotDownloaded, string? tag, bool showOnlyUpdates, string? search, bool showOnlyFavorites, IEnumerable<string> favoriteTags)
+        public static bool Matches(BoothItem item, bool showOnlyNotDownloaded, string? tag, bool showOnlyUpdates, string? search, bool showOnlyFavorites, IEnumerable<string> favoriteTags, int favoriteFolderIndex)
         {
             if (showOnlyNotDownloaded && item.IsDownloaded)
             {
@@ -21,6 +21,11 @@ namespace BoothDownloadApp
             }
 
             if (showOnlyFavorites && !item.Tags.Any(t => favoriteTags.Contains(t)))
+            {
+                return false;
+            }
+
+            if (favoriteFolderIndex >= 0 && item.FavoriteFolderIndex != favoriteFolderIndex)
             {
                 return false;
             }
@@ -50,9 +55,9 @@ namespace BoothDownloadApp
             return true;
         }
 
-        public static IEnumerable<BoothItem> Apply(IEnumerable<BoothItem> items, bool showOnlyNotDownloaded, string? tag, bool showOnlyUpdates, string? search, bool showOnlyFavorites, IEnumerable<string> favoriteTags)
+        public static IEnumerable<BoothItem> Apply(IEnumerable<BoothItem> items, bool showOnlyNotDownloaded, string? tag, bool showOnlyUpdates, string? search, bool showOnlyFavorites, IEnumerable<string> favoriteTags, int favoriteFolderIndex)
         {
-            return items.Where(i => Matches(i, showOnlyNotDownloaded, tag, showOnlyUpdates, search, showOnlyFavorites, favoriteTags));
+            return items.Where(i => Matches(i, showOnlyNotDownloaded, tag, showOnlyUpdates, search, showOnlyFavorites, favoriteTags, favoriteFolderIndex));
         }
     }
 }
