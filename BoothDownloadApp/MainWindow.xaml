@@ -44,6 +44,7 @@
                 <TextBlock Text="検索" Margin="0,10,0,0"/>
                 <TextBox Width="150" Margin="0,0,0,5" Text="{Binding SearchQuery, UpdateSourceTrigger=PropertyChanged}" TextChanged="FilterChanged"/>
                 <Button Content="📁 フォルダ設定" Width="120" Margin="0,0,0,5" Click="OpenFavoriteFolderSetting"/>
+                <Button Content="📌 フォルダ割り当て" Width="120" Margin="0,0,0,5" Click="OpenFavoriteFolderAssign"/>
                 <TabControl Margin="0,5,0,5" SelectedIndex="{Binding SelectedFavoriteFolderIndex}">
                     <TabItem Header="All" />
                     <TabItem Header="{Binding FavoriteFolderNames[0]}" Visibility="{Binding FavoriteFolderUsed[0], Converter={StaticResource BoolToVisibilityConverter}}" />

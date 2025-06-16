@@ -124,6 +124,21 @@ namespace BoothDownloadApp
             [JsonPropertyName("downloadLink")]
             public string DownloadLink { get; set; } = string.Empty;
 
+            private int _favoriteFolderIndex = -1;
+            [JsonPropertyName("favoriteFolderIndex")]
+            public int FavoriteFolderIndex
+            {
+                get => _favoriteFolderIndex;
+                set
+                {
+                    if (_favoriteFolderIndex != value)
+                    {
+                        _favoriteFolderIndex = value;
+                        OnPropertyChanged();
+                    }
+                }
+            }
+
             [JsonPropertyName("description")]
             public string Description
             {

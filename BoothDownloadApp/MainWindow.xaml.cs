@@ -480,12 +480,25 @@ namespace BoothDownloadApp
                 }
                 item.IsDownloaded = item.Downloads.All(d => d.IsDownloaded);
 
-                if (item.FavoriteFolderIndex >= 0 && item.FavoriteFolderIndex < _settings.FavoriteFolders.Length)
+                var assignedFolders = item.Downloads
+                    .Select(d => d.FavoriteFolderIndex >= 0 ? d.FavoriteFolderIndex : item.FavoriteFolderIndex)
+                    .Where(i => i >= 0 && i < _settings.FavoriteFolders.Length)
+                    .Distinct()
+                    .ToList();
+
+                if (assignedFolders.Count == 1)
                 {
-                    string favRoot = _settings.FavoriteFolders[item.FavoriteFolderIndex];
+                    int idx = assignedFolders[0];
+                    string favRoot = _settings.FavoriteFolders[idx];
                     bool allCopied = true;
                     foreach (var d in item.Downloads)
                     {
+                        int dIdx = d.FavoriteFolderIndex >= 0 ? d.FavoriteFolderIndex : item.FavoriteFolderIndex;
+                        if (dIdx != idx)
+                        {
+                            allCopied = false;
+                            break;
+                        }
                         string p = Path.Combine(
                             favRoot,
                             PathUtils.Sanitize(item.ShopName),
@@ -512,7 +525,7 @@ namespace BoothDownloadApp
                     }
                     if (allCopied)
                     {
-                        item.CopiedFavoriteFolderIndex = item.FavoriteFolderIndex;
+                        item.CopiedFavoriteFolderIndex = idx;
                         item.CopiedFavoriteFolderName = favRoot;
                     }
                     else
@@ -690,6 +703,23 @@ namespace BoothDownloadApp
                 {
                     FavoriteFolderNames.Add(n);
                 }
+            }
+        }
+
+        private void OpenFavoriteFolderAssign(object sender, RoutedEventArgs e)
+        {
+            if (itemsListView.SelectedItem is BoothItem item)
+            {
+                var window = new FavoriteFolderAssignWindow(item, FavoriteFolderNames.ToList());
+                if (window.ShowDialog() == true)
+                {
+                    SaveManagementData();
+                    UpdateDownloadStatus();
+                }
+            }
+            else
+            {
+                MessageBox.Show("アイテムを選択してください。", "情報", MessageBoxButton.OK, MessageBoxImage.Information);
             }
         }
 
