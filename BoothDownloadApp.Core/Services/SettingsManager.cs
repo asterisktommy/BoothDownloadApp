@@ -28,7 +28,7 @@ namespace BoothDownloadApp
             {
                 // ignore and fall back to defaults
             }
-            return new Settings { DownloadPath = "C:\\BoothData", RetryCount = 3, FavoriteTags = new List<string>() };
+            return new Settings { DownloadPath = "C:\\BoothData", RetryCount = 3, FavoriteTags = new List<string>(), AutoExtractInFavorite = false };
         }
 
         public static void Save(Settings settings)

@@ -128,6 +128,34 @@ namespace BoothDownloadApp
             }
         }
 
+        private bool _autoExtractInFavorite;
+        public bool AutoExtractInFavorite
+        {
+            get => _autoExtractInFavorite;
+            set
+            {
+                if (_autoExtractInFavorite != value)
+                {
+                    _autoExtractInFavorite = value;
+                    OnPropertyChanged();
+                }
+            }
+        }
+
+        private string _statusMessage = string.Empty;
+        public string StatusMessage
+        {
+            get => _statusMessage;
+            set
+            {
+                if (_statusMessage != value)
+                {
+                    _statusMessage = value;
+                    OnPropertyChanged();
+                }
+            }
+        }
+
         private CancellationTokenSource? _cts;
         private bool _isDownloading;
 
@@ -144,6 +172,7 @@ namespace BoothDownloadApp
             _isDownloading = false;
             // apply settings
             DownloadFolderPath = string.IsNullOrWhiteSpace(_settings.DownloadPath) ? "C:\\BoothData" : _settings.DownloadPath;
+            AutoExtractInFavorite = _settings.AutoExtractInFavorite;
             if (_settings.FavoriteTags != null)
             {
                 foreach (var t in _settings.FavoriteTags)
@@ -213,6 +242,7 @@ namespace BoothDownloadApp
         {
             SaveManagementData();
             _settings.DownloadPath = DownloadFolderPath;
+            _settings.AutoExtractInFavorite = AutoExtractInFavorite;
             _settings.FavoriteTags = _favoriteTags.ToList();
             SettingsManager.Save(_settings);
             base.OnClosing(e);
@@ -414,6 +444,41 @@ namespace BoothDownloadApp
             {
                 MessageBox.Show($"フォルダを開けませんでした: {ex.Message}", "エラー", MessageBoxButton.OK, MessageBoxImage.Error);
             }
+        }
+
+        private void CopyToFavoriteFolder(object sender, RoutedEventArgs e)
+        {
+            var selected = Items.SelectMany(i => i.Downloads.Select(d => (item: i, file: d)))
+                .Where(t => t.file.IsSelected && t.file.IsDownloaded)
+                .ToList();
+            if (selected.Count == 0)
+            {
+                MessageBox.Show("コピーするファイルを選択してください。", "情報", MessageBoxButton.OK, MessageBoxImage.Information);
+                return;
+            }
+
+            int success = 0;
+            foreach (var entry in selected)
+            {
+                string src = Path.Combine(
+                    DownloadFolderPath,
+                    PathUtils.Sanitize(entry.item.ShopName),
+                    PathUtils.Sanitize(entry.item.ProductName),
+                    PathUtils.Sanitize(entry.file.FileName));
+
+                string destFolder = Path.Combine(
+                    DownloadFolderPath,
+                    "Favorites",
+                    PathUtils.Sanitize(entry.item.ShopName),
+                    PathUtils.Sanitize(entry.item.ProductName));
+
+                if (FavoriteFolderService.CopyFileToFavorite(src, destFolder, AutoExtractInFavorite))
+                {
+                    success++;
+                }
+            }
+
+            StatusMessage = success == selected.Count ? "お気に入りフォルダーへコピーしました" : $"コピー失敗: {selected.Count - success} 件";
         }
 
         /// <summary>

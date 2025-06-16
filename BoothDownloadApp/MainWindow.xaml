@@ -145,6 +145,10 @@
             <Button Content="✏️ 編集" Width="80" Margin="5" Click="OpenEditWindow"/>
             <Button Content="＋ 手動追加" Width="80" Margin="5" Click="OpenManualAdd"/>
 
+            <Button Content="⭐ お気に入りコピー" Width="120" Margin="5" Click="CopyToFavoriteFolder"/>
+            <CheckBox Content="ZIP自動展開" Margin="5" VerticalAlignment="Center"
+                      IsChecked="{Binding AutoExtractInFavorite}"/>
+
             <Button Content="⬇️ ダウンロード開始" Width="120" Margin="5" Click="StartDownload"/>
             <Button Content="⬇️ 未DL一括" Width="120" Margin="5" Click="DownloadAllNotDownloaded"/>
             <Button Content="⏸ 停止" Width="80" Margin="5" Click="StopDownload"/>
@@ -153,6 +157,7 @@
             <ProgressBar x:Name="DownloadProgress" Height="20" Margin="20,0,10,0" VerticalAlignment="Center"
                          Minimum="0" Maximum="100" Width="200"
                          Value="{Binding Progress, Mode=OneWay}"/>
+            <TextBlock Text="{Binding StatusMessage}" Margin="10,0,0,0" VerticalAlignment="Center"/>
         </StackPanel>
     </Grid>
 </Window>
