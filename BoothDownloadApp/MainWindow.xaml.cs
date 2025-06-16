@@ -505,6 +505,7 @@ namespace BoothDownloadApp
             }
 
             StatusMessage = success == selected.Count ? "お気に入りフォルダーへコピーしました" : $"コピー失敗: {selected.Count - success} 件";
+            UpdateDownloadStatus();
         }
 
         /// <summary>
