@@ -13,7 +13,7 @@ namespace BoothDownloadApp
     /// </summary>
     public static class DownloadService
     {
-        public static async Task DownloadItemsAsync(IEnumerable<BoothItem> items, Func<BoothItem.DownloadInfo, bool> fileSelector, string rootPath, int retryCount, DatabaseManager db, IProgress<int>? progress, CancellationToken token)
+        public static async Task DownloadItemsAsync(IEnumerable<BoothItem> items, Func<BoothItem.DownloadInfo, bool> fileSelector, string rootPath, int retryCount, DatabaseManager db, string[] favoriteFolders, IProgress<int>? progress, CancellationToken token)
         {
             using HttpClient httpClient = new HttpClient();
             var fileList = items.SelectMany(i => i.Downloads.Where(fileSelector).Select(d => (item: i, file: d))).ToList();
@@ -43,6 +43,24 @@ namespace BoothDownloadApp
                         downloaded++;
                         progress?.Report((int)((double)downloaded / totalFiles * 100));
                         db.SaveHistoryItem(PathUtils.Sanitize(entry.file.FileName), entry.file.DownloadLink);
+
+                        if (entry.item.FavoriteFolderIndex >= 0 && entry.item.FavoriteFolderIndex < favoriteFolders.Length)
+                        {
+                            string favRoot = favoriteFolders[entry.item.FavoriteFolderIndex];
+                            if (!string.IsNullOrWhiteSpace(favRoot))
+                            {
+                                string favFolder = Path.Combine(favRoot,
+                                    PathUtils.Sanitize(entry.item.ShopName),
+                                    PathUtils.Sanitize(entry.item.ProductName));
+                                Directory.CreateDirectory(favFolder);
+                                string dest = Path.Combine(favFolder, PathUtils.Sanitize(entry.file.FileName));
+                                try
+                                {
+                                    File.Copy(path, dest, true);
+                                }
+                                catch { }
+                            }
+                        }
                         break;
                     }
                     catch (OperationCanceledException)

@@ -84,6 +84,8 @@ namespace BoothDownloadApp
         private readonly ObservableCollection<string> _favoriteTags = new ObservableCollection<string>();
         public ObservableCollection<string> FavoriteTags => _favoriteTags;
 
+        public ObservableCollection<string> FavoriteFolderNames { get; } = new ObservableCollection<string>();
+
         private string? _selectedTag = "All";
         public string? SelectedTag
         {
@@ -108,6 +110,21 @@ namespace BoothDownloadApp
                 if (_searchQuery != value)
                 {
                     _searchQuery = value;
+                    OnPropertyChanged();
+                    ApplyFilters();
+                }
+            }
+        }
+
+        private int _selectedFavoriteFolderIndex = -1;
+        public int SelectedFavoriteFolderIndex
+        {
+            get => _selectedFavoriteFolderIndex;
+            set
+            {
+                if (_selectedFavoriteFolderIndex != value)
+                {
+                    _selectedFavoriteFolderIndex = value;
                     OnPropertyChanged();
                     ApplyFilters();
                 }
@@ -180,6 +197,13 @@ namespace BoothDownloadApp
                     _favoriteTags.Add(t);
                 }
             }
+            if (_settings.FavoriteFolders != null)
+            {
+                foreach (var n in _settings.FavoriteFolders)
+                {
+                    FavoriteFolderNames.Add(n);
+                }
+            }
             // 起動後に管理用JSONを読み込む
             Loaded += async (_, __) => await LoadManagementDataAsync();
         }
@@ -244,6 +268,7 @@ namespace BoothDownloadApp
             _settings.DownloadPath = DownloadFolderPath;
             _settings.AutoExtractInFavorite = AutoExtractInFavorite;
             _settings.FavoriteTags = _favoriteTags.ToList();
+            _settings.FavoriteFolders = FavoriteFolderNames.ToArray();
             SettingsManager.Save(_settings);
             base.OnClosing(e);
         }
@@ -308,6 +333,7 @@ namespace BoothDownloadApp
                     DownloadFolderPath,
                     _settings.RetryCount,
                     _dbManager,
+                    _settings.FavoriteFolders,
                     new Progress<int>(p => Progress = p),
                     token);
                 MessageBox.Show("ダウンロードが完了しました！", "情報", MessageBoxButton.OK, MessageBoxImage.Information);
@@ -498,6 +524,40 @@ namespace BoothDownloadApp
                     download.IsDownloaded = File.Exists(path);
                 }
                 item.IsDownloaded = item.Downloads.All(d => d.IsDownloaded);
+
+                if (item.FavoriteFolderIndex >= 0 && item.FavoriteFolderIndex < _settings.FavoriteFolders.Length)
+                {
+                    string favRoot = _settings.FavoriteFolders[item.FavoriteFolderIndex];
+                    bool allCopied = true;
+                    foreach (var d in item.Downloads)
+                    {
+                        string p = Path.Combine(
+                            favRoot,
+                            PathUtils.Sanitize(item.ShopName),
+                            PathUtils.Sanitize(item.ProductName),
+                            PathUtils.Sanitize(d.FileName));
+                        if (!File.Exists(p))
+                        {
+                            allCopied = false;
+                            break;
+                        }
+                    }
+                    if (allCopied)
+                    {
+                        item.CopiedFavoriteFolderIndex = item.FavoriteFolderIndex;
+                        item.CopiedFavoriteFolderName = favRoot;
+                    }
+                    else
+                    {
+                        item.CopiedFavoriteFolderIndex = -1;
+                        item.CopiedFavoriteFolderName = string.Empty;
+                    }
+                }
+                else
+                {
+                    item.CopiedFavoriteFolderIndex = -1;
+                    item.CopiedFavoriteFolderName = string.Empty;
+                }
             }
             UpdateAvailableTags();
             ApplyFilters();
@@ -565,7 +625,7 @@ namespace BoothDownloadApp
             ItemsView.Filter = obj =>
             {
                 if (obj is not BoothItem item) return false;
-                return FilterManager.Matches(item, ShowOnlyNotDownloaded, SelectedTag, ShowOnlyUpdates, SearchQuery, ShowOnlyFavorites, FavoriteTags);
+                return FilterManager.Matches(item, ShowOnlyNotDownloaded, SelectedTag, ShowOnlyUpdates, SearchQuery, ShowOnlyFavorites, FavoriteTags, SelectedFavoriteFolderIndex);
             };
 
             ItemsView.Refresh();
@@ -634,6 +694,41 @@ namespace BoothDownloadApp
                     }
                 }
                 Items.Add(item);
+                SaveManagementData();
+            UpdateDownloadStatus();
+        }
+
+        private void OpenFavoriteFolderSetting(object sender, RoutedEventArgs e)
+        {
+            var window = new FavoriteFoldersWindow(FavoriteFolderNames.ToArray());
+            if (window.ShowDialog() == true)
+            {
+                FavoriteFolderNames.Clear();
+                foreach (var n in window.FolderNames)
+                {
+                    FavoriteFolderNames.Add(n);
+                }
+            }
+        }
+
+        private void SetFavoriteFolder(object sender, RoutedEventArgs e)
+        {
+            if (sender is MenuItem mi && int.TryParse(mi.Tag?.ToString(), out int idx))
+            {
+                if (mi.CommandParameter is BoothItem item)
+                {
+                    item.FavoriteFolderIndex = idx;
+                    SaveManagementData();
+                    UpdateDownloadStatus();
+                }
+            }
+        }
+
+        private void ClearFavoriteFolder(object sender, RoutedEventArgs e)
+        {
+            if (sender is MenuItem mi && mi.CommandParameter is BoothItem item)
+            {
+                item.FavoriteFolderIndex = -1;
                 SaveManagementData();
                 UpdateDownloadStatus();
             }

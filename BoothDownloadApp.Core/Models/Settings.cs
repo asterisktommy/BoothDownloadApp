@@ -8,5 +8,6 @@ namespace BoothDownloadApp
         public int RetryCount { get; set; }
         public List<string> FavoriteTags { get; set; } = new List<string>();
         public bool AutoExtractInFavorite { get; set; }
+        public string[] FavoriteFolders { get; set; } = new string[10];
     }
 }

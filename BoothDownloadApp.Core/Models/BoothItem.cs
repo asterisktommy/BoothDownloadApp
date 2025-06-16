@@ -35,6 +35,42 @@ namespace BoothDownloadApp
         [JsonPropertyName("tagsFetched")]
         public bool TagsFetched { get; set; }
 
+        [JsonPropertyName("favoriteFolderIndex")]
+        public int FavoriteFolderIndex { get; set; } = -1;
+
+        private int _copiedFavoriteFolderIndex = -1;
+
+        [JsonIgnore]
+        public int CopiedFavoriteFolderIndex
+        {
+            get => _copiedFavoriteFolderIndex;
+            set
+            {
+                if (_copiedFavoriteFolderIndex != value)
+                {
+                    _copiedFavoriteFolderIndex = value;
+                    OnPropertyChanged();
+                    OnPropertyChanged(nameof(CopiedFavoriteFolderName));
+                }
+            }
+        }
+
+        private string _copiedFavoriteFolderName = string.Empty;
+
+        [JsonIgnore]
+        public string CopiedFavoriteFolderName
+        {
+            get => _copiedFavoriteFolderName;
+            set
+            {
+                if (_copiedFavoriteFolderName != value)
+                {
+                    _copiedFavoriteFolderName = value;
+                    OnPropertyChanged();
+                }
+            }
+        }
+
         public bool IsSelected
         {
             get => _isSelected;
