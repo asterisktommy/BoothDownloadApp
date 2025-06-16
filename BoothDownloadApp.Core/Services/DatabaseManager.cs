@@ -42,7 +42,8 @@ CREATE TABLE IF NOT EXISTS ItemTags (ItemId INTEGER, TagId INTEGER, UNIQUE(ItemI
             insert.ExecuteNonQuery();
             using var select = new SQLiteCommand("SELECT Id FROM Tags WHERE Name=@name;", connection);
             select.Parameters.AddWithValue("@name", tag);
-            return (long)select.ExecuteScalar();
+            object? result = select.ExecuteScalar();
+            return Convert.ToInt64(result ?? 0);
         }
 
         private static long EnsureItem(string name, string url, SQLiteConnection connection)
@@ -53,7 +54,8 @@ CREATE TABLE IF NOT EXISTS ItemTags (ItemId INTEGER, TagId INTEGER, UNIQUE(ItemI
             insert.ExecuteNonQuery();
             using var select = new SQLiteCommand("SELECT Id FROM History WHERE URL=@url;", connection);
             select.Parameters.AddWithValue("@url", url);
-            return (long)select.ExecuteScalar();
+            object? result = select.ExecuteScalar();
+            return Convert.ToInt64(result ?? 0);
         }
 
         private static void SaveItemWithTags(string name, string url, List<string> tags, SQLiteConnection connection)
