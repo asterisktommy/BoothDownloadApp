@@ -66,21 +66,21 @@ namespace BoothDownloadApp
                                         {
                                             using ZipArchive archive = ZipFile.OpenRead(dest);
                                             string extractRoot = Path.GetFullPath(extractDir);
-                                            foreach (var entry in archive.Entries)
+                                            foreach (var zipEntry in archive.Entries)
                                             {
-                                                string entryDest = Path.GetFullPath(Path.Combine(extractDir, entry.FullName));
+                                                string entryDest = Path.GetFullPath(Path.Combine(extractDir, zipEntry.FullName));
                                                 if (!entryDest.StartsWith(extractRoot, StringComparison.Ordinal))
                                                 {
                                                     continue;
                                                 }
-                                                if (string.IsNullOrEmpty(entry.Name))
+                                                if (string.IsNullOrEmpty(zipEntry.Name))
                                                 {
                                                     Directory.CreateDirectory(entryDest);
                                                 }
                                                 else
                                                 {
                                                     Directory.CreateDirectory(Path.GetDirectoryName(entryDest)!);
-                                                    entry.ExtractToFile(entryDest, true);
+                                                    zipEntry.ExtractToFile(entryDest, true);
                                                 }
                                             }
                                             File.Delete(dest);
