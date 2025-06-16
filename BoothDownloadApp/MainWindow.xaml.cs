@@ -101,6 +101,8 @@ namespace BoothDownloadApp
 
         public ObservableCollection<string> FavoriteFolderNames { get; } = new ObservableCollection<string>();
 
+        public ObservableCollection<bool> FavoriteFolderUsed { get; } = new ObservableCollection<bool>(Enumerable.Repeat(false, 10));
+
         private string? _selectedTag = "All";
         public string? SelectedTag
         {
@@ -526,7 +528,17 @@ namespace BoothDownloadApp
                 }
             }
             UpdateAvailableTags();
+            UpdateFavoriteFolderUsage();
             ApplyFilters();
+        }
+
+        private void UpdateFavoriteFolderUsage()
+        {
+            for (int i = 0; i < FavoriteFolderUsed.Count; i++)
+            {
+                bool used = Items.Any(item => item.FavoriteFolderIndex == i);
+                FavoriteFolderUsed[i] = used;
+            }
         }
 
         private void UpdateAvailableTags()
