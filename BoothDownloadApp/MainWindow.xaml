@@ -41,22 +41,22 @@
                           IsChecked="{Binding ShowOnlyFavorites}"
                           Checked="FilterChanged" Unchecked="FilterChanged"/>
                 <Button Content="☆ 設定" Width="100" Margin="0,0,0,5" Click="OpenFavoritesSetting"/>
+                <TextBlock Text="検索" Margin="0,10,0,0"/>
+                <TextBox Width="150" Margin="0,0,0,5" Text="{Binding SearchQuery, UpdateSourceTrigger=PropertyChanged}" TextChanged="FilterChanged"/>
                 <Button Content="📁 フォルダ設定" Width="120" Margin="0,0,0,5" Click="OpenFavoriteFolderSetting"/>
                 <TabControl Margin="0,5,0,5" SelectedIndex="{Binding SelectedFavoriteFolderIndex}">
                     <TabItem Header="All" />
-                    <TabItem Header="{Binding FavoriteFolderNames[0]}" />
-                    <TabItem Header="{Binding FavoriteFolderNames[1]}" />
-                    <TabItem Header="{Binding FavoriteFolderNames[2]}" />
-                    <TabItem Header="{Binding FavoriteFolderNames[3]}" />
-                    <TabItem Header="{Binding FavoriteFolderNames[4]}" />
-                    <TabItem Header="{Binding FavoriteFolderNames[5]}" />
-                    <TabItem Header="{Binding FavoriteFolderNames[6]}" />
-                    <TabItem Header="{Binding FavoriteFolderNames[7]}" />
-                    <TabItem Header="{Binding FavoriteFolderNames[8]}" />
-                    <TabItem Header="{Binding FavoriteFolderNames[9]}" />
+                    <TabItem Header="{Binding FavoriteFolderNames[0]}" Visibility="{Binding FavoriteFolderUsed[0], Converter={StaticResource BoolToVisibilityConverter}}" />
+                    <TabItem Header="{Binding FavoriteFolderNames[1]}" Visibility="{Binding FavoriteFolderUsed[1], Converter={StaticResource BoolToVisibilityConverter}}" />
+                    <TabItem Header="{Binding FavoriteFolderNames[2]}" Visibility="{Binding FavoriteFolderUsed[2], Converter={StaticResource BoolToVisibilityConverter}}" />
+                    <TabItem Header="{Binding FavoriteFolderNames[3]}" Visibility="{Binding FavoriteFolderUsed[3], Converter={StaticResource BoolToVisibilityConverter}}" />
+                    <TabItem Header="{Binding FavoriteFolderNames[4]}" Visibility="{Binding FavoriteFolderUsed[4], Converter={StaticResource BoolToVisibilityConverter}}" />
+                    <TabItem Header="{Binding FavoriteFolderNames[5]}" Visibility="{Binding FavoriteFolderUsed[5], Converter={StaticResource BoolToVisibilityConverter}}" />
+                    <TabItem Header="{Binding FavoriteFolderNames[6]}" Visibility="{Binding FavoriteFolderUsed[6], Converter={StaticResource BoolToVisibilityConverter}}" />
+                    <TabItem Header="{Binding FavoriteFolderNames[7]}" Visibility="{Binding FavoriteFolderUsed[7], Converter={StaticResource BoolToVisibilityConverter}}" />
+                    <TabItem Header="{Binding FavoriteFolderNames[8]}" Visibility="{Binding FavoriteFolderUsed[8], Converter={StaticResource BoolToVisibilityConverter}}" />
+                    <TabItem Header="{Binding FavoriteFolderNames[9]}" Visibility="{Binding FavoriteFolderUsed[9], Converter={StaticResource BoolToVisibilityConverter}}" />
                 </TabControl>
-                <TextBlock Text="検索" Margin="0,10,0,0"/>
-                <TextBox Width="150" Margin="0,0,0,5" Text="{Binding SearchQuery, UpdateSourceTrigger=PropertyChanged}" TextChanged="FilterChanged"/>
             </StackPanel>
 
             <!-- アイテム一覧領域 -->
