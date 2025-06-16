@@ -45,9 +45,10 @@ namespace BoothDownloadApp
                         progress?.Report((int)((double)downloaded / totalFiles * 100));
                         db.SaveHistoryItem(PathUtils.Sanitize(entry.file.FileName), entry.file.DownloadLink);
 
-                        if (entry.item.FavoriteFolderIndex >= 0 && entry.item.FavoriteFolderIndex < favoriteFolders.Length)
+                        int folderIdx = entry.file.FavoriteFolderIndex >= 0 ? entry.file.FavoriteFolderIndex : entry.item.FavoriteFolderIndex;
+                        if (folderIdx >= 0 && folderIdx < favoriteFolders.Length)
                         {
-                            string favRoot = favoriteFolders[entry.item.FavoriteFolderIndex];
+                            string favRoot = favoriteFolders[folderIdx];
                             if (!string.IsNullOrWhiteSpace(favRoot))
                             {
                                 string favFolder = Path.Combine(favRoot,

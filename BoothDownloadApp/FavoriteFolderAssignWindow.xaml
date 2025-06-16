@@ -1,0 +1,34 @@
+<Window x:Class="BoothDownloadApp.FavoriteFolderAssignWindow"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        Title="お気に入りフォルダ割り当て" Height="400" Width="500">
+    <Grid Margin="10">
+        <Grid.RowDefinitions>
+            <RowDefinition Height="Auto" />
+            <RowDefinition Height="*" />
+            <RowDefinition Height="Auto" />
+        </Grid.RowDefinitions>
+        <StackPanel Grid.Row="0" Orientation="Horizontal" Margin="0,0,0,10">
+            <TextBlock Text="アイテム:" VerticalAlignment="Center" />
+            <TextBlock Text="{Binding ProductName}" FontWeight="Bold" Margin="5,0,0,0" VerticalAlignment="Center" />
+            <TextBlock Text=" フォルダ:" Margin="20,0,0,0" VerticalAlignment="Center" />
+            <ComboBox Width="120" ItemsSource="{Binding FolderNames}" SelectedIndex="{Binding ItemFolderIndex}" />
+        </StackPanel>
+        <DataGrid Grid.Row="1" ItemsSource="{Binding Item.Downloads}" AutoGenerateColumns="False">
+            <DataGrid.Columns>
+                <DataGridTextColumn Header="ファイル名" Binding="{Binding FileName}" Width="200" />
+                <DataGridTemplateColumn Header="フォルダ" Width="120">
+                    <DataGridTemplateColumn.CellTemplate>
+                        <DataTemplate>
+                            <ComboBox Width="100" ItemsSource="{Binding DataContext.FolderNames, RelativeSource={RelativeSource AncestorType=Window}}" SelectedIndex="{Binding FavoriteFolderIndex}" />
+                        </DataTemplate>
+                    </DataGridTemplateColumn.CellTemplate>
+                </DataGridTemplateColumn>
+            </DataGrid.Columns>
+        </DataGrid>
+        <StackPanel Grid.Row="2" Orientation="Horizontal" HorizontalAlignment="Right" Margin="0,10,0,0">
+            <Button Content="OK" Width="80" Margin="5" Click="Ok_Click" />
+            <Button Content="キャンセル" Width="80" Margin="5" Click="Cancel_Click" />
+        </StackPanel>
+    </Grid>
+</Window>
