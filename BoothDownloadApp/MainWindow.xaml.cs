@@ -78,6 +78,20 @@ namespace BoothDownloadApp
             }
         }
 
+        private bool _autoExtractZip;
+        public bool AutoExtractZip
+        {
+            get => _autoExtractZip;
+            set
+            {
+                if (_autoExtractZip != value)
+                {
+                    _autoExtractZip = value;
+                    OnPropertyChanged();
+                }
+            }
+        }
+
         private readonly ObservableCollection<string> _availableTags = new ObservableCollection<string>();
         public ObservableCollection<string> AvailableTags => _availableTags;
 
@@ -161,6 +175,7 @@ namespace BoothDownloadApp
             _isDownloading = false;
             // apply settings
             DownloadFolderPath = string.IsNullOrWhiteSpace(_settings.DownloadPath) ? "C:\\BoothData" : _settings.DownloadPath;
+            AutoExtractZip = _settings.AutoExtractZip;
             if (_settings.FavoriteTags != null)
             {
                 foreach (var t in _settings.FavoriteTags)
@@ -239,6 +254,7 @@ namespace BoothDownloadApp
             _settings.DownloadPath = DownloadFolderPath;
             _settings.FavoriteTags = _favoriteTags.ToList();
             _settings.FavoriteFolders = FavoriteFolderNames.ToArray();
+            _settings.AutoExtractZip = AutoExtractZip;
             SettingsManager.Save(_settings);
             base.OnClosing(e);
         }
@@ -304,6 +320,7 @@ namespace BoothDownloadApp
                     _settings.RetryCount,
                     _dbManager,
                     _settings.FavoriteFolders,
+                    AutoExtractZip,
                     new Progress<int>(p => Progress = p),
                     token);
                 MessageBox.Show("ダウンロードが完了しました！", "情報", MessageBoxButton.OK, MessageBoxImage.Information);
@@ -471,7 +488,20 @@ namespace BoothDownloadApp
                             PathUtils.Sanitize(item.ShopName),
                             PathUtils.Sanitize(item.ProductName),
                             PathUtils.Sanitize(d.FileName));
-                        if (!File.Exists(p))
+                        bool exists = File.Exists(p);
+                        if (!exists && AutoExtractZip && d.FileName.EndsWith(".zip", StringComparison.OrdinalIgnoreCase))
+                        {
+                            string extractDir = Path.Combine(
+                                favRoot,
+                                PathUtils.Sanitize(item.ShopName),
+                                PathUtils.Sanitize(item.ProductName),
+                                Path.GetFileNameWithoutExtension(PathUtils.Sanitize(d.FileName)));
+                            if (Directory.Exists(extractDir))
+                            {
+                                exists = Directory.EnumerateFileSystemEntries(extractDir).Any();
+                            }
+                        }
+                        if (!exists)
                         {
                             allCopied = false;
                             break;

@@ -75,6 +75,7 @@ namespace BoothDownloadApp.Maui
                     3,
                     db,
                     new string[10],
+                    false,
                     null,
                     CancellationToken.None);
                 await DisplayAlert("Done", "Downloads completed", "OK");

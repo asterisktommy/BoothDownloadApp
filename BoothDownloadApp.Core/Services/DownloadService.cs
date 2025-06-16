@@ -1,6 +1,7 @@
 using System;
 using System.Collections.Generic;
 using System.IO;
+using System.IO.Compression;
 using System.Linq;
 using System.Net.Http;
 using System.Threading;
@@ -13,7 +14,7 @@ namespace BoothDownloadApp
     /// </summary>
     public static class DownloadService
     {
-        public static async Task DownloadItemsAsync(IEnumerable<BoothItem> items, Func<BoothItem.DownloadInfo, bool> fileSelector, string rootPath, int retryCount, DatabaseManager db, string[] favoriteFolders, IProgress<int>? progress, CancellationToken token)
+        public static async Task DownloadItemsAsync(IEnumerable<BoothItem> items, Func<BoothItem.DownloadInfo, bool> fileSelector, string rootPath, int retryCount, DatabaseManager db, string[] favoriteFolders, bool autoExtractZip, IProgress<int>? progress, CancellationToken token)
         {
             using HttpClient httpClient = new HttpClient();
             var fileList = items.SelectMany(i => i.Downloads.Where(fileSelector).Select(d => (item: i, file: d))).ToList();
@@ -57,6 +58,17 @@ namespace BoothDownloadApp
                                 try
                                 {
                                     File.Copy(path, dest, true);
+                                    if (autoExtractZip && dest.EndsWith(".zip", StringComparison.OrdinalIgnoreCase))
+                                    {
+                                        string extractDir = Path.Combine(Path.GetDirectoryName(dest)!, Path.GetFileNameWithoutExtension(dest));
+                                        Directory.CreateDirectory(extractDir);
+                                        try
+                                        {
+                                            ZipFile.ExtractToDirectory(dest, extractDir, true);
+                                            File.Delete(dest);
+                                        }
+                                        catch { }
+                                    }
                                 }
                                 catch { }
                             }
