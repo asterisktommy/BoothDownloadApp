@@ -1,6 +1,7 @@
 using System.Collections.ObjectModel;
 using System.ComponentModel;
 using System.IO;
+using System.IO.Compression;
 using System.Runtime.CompilerServices;
 using System.Text.Json;
 using System.Text.Json.Serialization;
@@ -684,6 +685,66 @@ namespace BoothDownloadApp
                 {
                     item.FavoriteFolderIndex = idx;
                     SaveManagementData();
+
+                    try
+                    {
+                        if (idx >= 0 && idx < _settings.FavoriteFolders.Length)
+                        {
+                            string favRoot = _settings.FavoriteFolders[idx];
+                            if (!string.IsNullOrWhiteSpace(favRoot))
+                            {
+                                foreach (var d in item.Downloads)
+                                {
+                                    string src = Path.Combine(
+                                        DownloadFolderPath,
+                                        PathUtils.Sanitize(item.ShopName),
+                                        PathUtils.Sanitize(item.ProductName),
+                                        PathUtils.Sanitize(d.FileName));
+
+                                    if (!File.Exists(src))
+                                        continue;
+
+                                    string destFolder = Path.Combine(
+                                        favRoot,
+                                        PathUtils.Sanitize(item.ShopName),
+                                        PathUtils.Sanitize(item.ProductName));
+                                    Directory.CreateDirectory(destFolder);
+                                    string dest = Path.Combine(destFolder, PathUtils.Sanitize(d.FileName));
+
+                                    bool exists = File.Exists(dest);
+                                    if (!exists && AutoExtractZip && d.FileName.EndsWith(".zip", StringComparison.OrdinalIgnoreCase))
+                                    {
+                                        string extractDir = Path.Combine(destFolder, Path.GetFileNameWithoutExtension(PathUtils.Sanitize(d.FileName)));
+                                        if (Directory.Exists(extractDir))
+                                        {
+                                            exists = Directory.EnumerateFileSystemEntries(extractDir).Any();
+                                        }
+                                    }
+
+                                    if (!exists)
+                                    {
+                                        File.Copy(src, dest, true);
+                                        if (AutoExtractZip && dest.EndsWith(".zip", StringComparison.OrdinalIgnoreCase))
+                                        {
+                                            string extractDir = Path.Combine(destFolder, Path.GetFileNameWithoutExtension(PathUtils.Sanitize(d.FileName)));
+                                            Directory.CreateDirectory(extractDir);
+                                            try
+                                            {
+                                                ZipFile.ExtractToDirectory(dest, extractDir, true);
+                                                File.Delete(dest);
+                                            }
+                                            catch { }
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                    }
+                    catch (Exception ex)
+                    {
+                        MessageBox.Show($"ファイルコピーに失敗しました: {ex.Message}", "エラー", MessageBoxButton.OK, MessageBoxImage.Error);
+                    }
+
                     UpdateDownloadStatus();
                 }
             }
