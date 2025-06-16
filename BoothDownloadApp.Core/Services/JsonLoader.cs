@@ -26,7 +26,10 @@ namespace BoothDownloadApp
                     }
                 }
             }
-            catch { }
+            catch (Exception ex)
+            {
+                Console.Error.WriteLine($"Failed to parse BoothLibrary JSON: {ex.Message}");
+            }
             try
             {
                 var simple = JsonSerializer.Deserialize<List<SimpleBoothItem>>(json, options);
@@ -49,7 +52,10 @@ namespace BoothDownloadApp
                     }).ToList();
                 }
             }
-            catch { }
+            catch (Exception ex)
+            {
+                Console.Error.WriteLine($"Failed to parse SimpleBoothItem JSON: {ex.Message}");
+            }
             return null;
         }
     }

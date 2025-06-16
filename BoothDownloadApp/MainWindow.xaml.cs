@@ -572,8 +572,11 @@ namespace BoothDownloadApp
                     var fetched = await ProductFetcher.FetchItemAsync(item.ItemUrl);
                     if (fetched != null)
                     {
-                        item.Tags = fetched.Tags;
-                        item.TagsFetched = true;
+                        await Dispatcher.InvokeAsync(() =>
+                        {
+                            item.Tags = fetched.Tags;
+                            item.TagsFetched = true;
+                        });
                     }
                 }
             });
@@ -661,6 +664,7 @@ namespace BoothDownloadApp
                 }
                 Items.Add(item);
                 SaveManagementData();
+            }
             UpdateDownloadStatus();
         }
 
