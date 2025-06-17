@@ -160,24 +160,30 @@
         </Grid>
 
         <!-- 下部：ダウンロード操作 -->
-        <StackPanel Grid.Row="2" Orientation="Horizontal" VerticalAlignment="Center" Margin="10">
-            <TextBlock Text="💾 ダウンロード先:" VerticalAlignment="Center"/>
-            <TextBlock Text="{Binding DownloadFolderPath}" Width="200" TextWrapping="Wrap"/>
-            <Button Content="📂選択" Width="80" Margin="5" Click="SelectDownloadFolder"/>
-            <Button Content="📂開く" Width="80" Margin="5" Click="OpenDownloadFolder"/>
-            <Button Content="✏️ 編集" Width="80" Margin="5" Click="OpenEditWindow"/>
-            <Button Content="＋ 手動追加" Width="80" Margin="5" Click="OpenManualAdd"/>
+        <Grid Grid.Row="2" Margin="10">
+            <Grid.RowDefinitions>
+                <RowDefinition Height="Auto"/>
+                <RowDefinition Height="Auto"/>
+            </Grid.RowDefinitions>
+            <WrapPanel Grid.Row="0" VerticalAlignment="Center">
+                <TextBlock Text="💾 ダウンロード先:" VerticalAlignment="Center"/>
+                <TextBlock Text="{Binding DownloadFolderPath}" Width="200" TextWrapping="Wrap"/>
+                <Button Content="📂選択" Width="80" Margin="5" Click="SelectDownloadFolder"/>
+                <Button Content="📂開く" Width="80" Margin="5" Click="OpenDownloadFolder"/>
+                <Button Content="✏️ 編集" Width="80" Margin="5" Click="OpenEditWindow"/>
+                <Button Content="＋ 手動追加" Width="80" Margin="5" Click="OpenManualAdd"/>
 
-            <Button Content="⬇️ ダウンロード開始" Width="120" Margin="5" Click="StartDownload"/>
-            <Button Content="⬇️ 未DL一括" Width="120" Margin="5" Click="DownloadAllNotDownloaded"/>
-            <Button Content="⏸ 停止" Width="80" Margin="5" Click="StopDownload"/>
+                <Button Content="⬇️ ダウンロード開始" Width="120" Margin="5" Click="StartDownload"/>
+                <Button Content="⬇️ 未DL一括" Width="120" Margin="5" Click="DownloadAllNotDownloaded"/>
+                <Button Content="⏸ 停止" Width="80" Margin="5" Click="StopDownload"/>
 
-            <CheckBox Content="ZIP自動解凍" Margin="5" VerticalAlignment="Center" IsChecked="{Binding AutoExtractZip}"/>
+                <CheckBox Content="ZIP自動解凍" Margin="5" VerticalAlignment="Center" IsChecked="{Binding AutoExtractZip}"/>
+            </WrapPanel>
 
             <!-- 進捗バーを横幅いっぱいに配置 -->
-            <ProgressBar x:Name="DownloadProgress" Height="20" Margin="20,0,10,0" VerticalAlignment="Center"
-                         Minimum="0" Maximum="100" Width="200"
+            <ProgressBar Grid.Row="1" x:Name="DownloadProgress" Height="20" Margin="0,5,0,0" VerticalAlignment="Center"
+                         Minimum="0" Maximum="100"
                          Value="{Binding Progress, Mode=OneWay}"/>
-        </StackPanel>
+        </Grid>
     </Grid>
 </Window>
