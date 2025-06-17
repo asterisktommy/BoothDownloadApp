@@ -25,9 +25,19 @@ namespace BoothDownloadApp
                 return false;
             }
 
-            if (favoriteFolderIndex >= 0 && item.FavoriteFolderIndex != favoriteFolderIndex)
+            if (favoriteFolderIndex >= 0)
             {
-                return false;
+                if (item.FavoriteFolderIndex != favoriteFolderIndex)
+                {
+                    return false;
+                }
+            }
+            else if (favoriteFolderIndex == -2)
+            {
+                if (item.FavoriteFolderIndex >= 0)
+                {
+                    return false;
+                }
             }
 
             if (showOnlyUpdates)
