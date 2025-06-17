@@ -133,7 +133,7 @@ namespace BoothDownloadApp
             }
         }
 
-        private int _selectedFavoriteFolderIndex = -1;
+        private int _selectedFavoriteFolderIndex = 0; // "All" tab by default
         public int SelectedFavoriteFolderIndex
         {
             get => _selectedFavoriteFolderIndex;
@@ -616,10 +616,24 @@ namespace BoothDownloadApp
         {
             if (ItemsView == null) return;
 
+            int filterIndex;
+            if (SelectedFavoriteFolderIndex == 0)
+            {
+                filterIndex = -1; // All
+            }
+            else if (SelectedFavoriteFolderIndex == 1)
+            {
+                filterIndex = -2; // Unassigned only
+            }
+            else
+            {
+                filterIndex = SelectedFavoriteFolderIndex - 2;
+            }
+
             ItemsView.Filter = obj =>
             {
                 if (obj is not BoothItem item) return false;
-                return FilterManager.Matches(item, ShowOnlyNotDownloaded, SelectedTag, ShowOnlyUpdates, SearchQuery, ShowOnlyFavorites, FavoriteTags, SelectedFavoriteFolderIndex);
+                return FilterManager.Matches(item, ShowOnlyNotDownloaded, SelectedTag, ShowOnlyUpdates, SearchQuery, ShowOnlyFavorites, FavoriteTags, filterIndex);
             };
 
             ItemsView.Refresh();
