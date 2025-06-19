@@ -18,7 +18,7 @@ namespace BoothDownloadApp
         private async void LoginWindow_Loaded(object sender, RoutedEventArgs e)
         {
             await Browser.EnsureCoreWebView2Async();
-            Browser.CoreWebView2.Navigate("https://accounts.booth.pm/login");
+            Browser.CoreWebView2.Navigate("https://accounts.booth.pm/users/sign_in");
         }
 
         protected override async void OnClosed(EventArgs e)
