@@ -7,6 +7,13 @@ namespace BoothDownloadApp
         protected override void OnStartup(StartupEventArgs e)
         {
             base.OnStartup(e);
+
+            var loginWindow = new LoginWindow();
+            loginWindow.ShowDialog();
+
+            MainWindow mainWindow = new MainWindow();
+            MainWindow = mainWindow;
+            mainWindow.Show();
         }
     }
 }

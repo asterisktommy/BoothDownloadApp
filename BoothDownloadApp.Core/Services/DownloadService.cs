@@ -4,6 +4,7 @@ using System.IO;
 using System.IO.Compression;
 using System.Linq;
 using System.Net.Http;
+using System.Net;
 using System.Threading;
 using System.Threading.Tasks;
 
@@ -16,7 +17,13 @@ namespace BoothDownloadApp
     {
         public static async Task DownloadItemsAsync(IEnumerable<BoothItem> items, Func<BoothItem.DownloadInfo, bool> fileSelector, string rootPath, int retryCount, DatabaseManager db, string[] favoriteFolders, bool autoExtractZip, IProgress<int>? progress, CancellationToken token)
         {
-            using HttpClient httpClient = new HttpClient();
+            CookieContainer cookies = CookieStore.Load();
+            using HttpClientHandler handler = new HttpClientHandler { CookieContainer = cookies };
+            using HttpClient httpClient = new HttpClient(handler);
+            httpClient.DefaultRequestHeaders.UserAgent.ParseAdd(
+                "Mozilla/5.0 (Windows NT 10.0; Win64; x64) " +
+                "AppleWebKit/537.36 (KHTML, like Gecko) " +
+                "Chrome/123.0.0.0 Safari/537.36");
             var fileList = items.SelectMany(i => i.Downloads.Where(fileSelector).Select(d => (item: i, file: d))).ToList();
             int totalFiles = fileList.Count;
             int downloaded = 0;
@@ -34,7 +41,12 @@ namespace BoothDownloadApp
                 {
                     try
                     {
-                        using HttpResponseMessage response = await httpClient.GetAsync(entry.file.DownloadLink, token);
+                        using var request = new HttpRequestMessage(HttpMethod.Get, entry.file.DownloadLink);
+                        if (Uri.TryCreate(entry.item.ItemUrl, UriKind.Absolute, out var referer))
+                        {
+                            request.Headers.Referrer = referer;
+                        }
+                        using HttpResponseMessage response = await httpClient.SendAsync(request, token);
                         response.EnsureSuccessStatusCode();
                         await using FileStream fs = new FileStream(path, FileMode.Create, FileAccess.Write, FileShare.None);
                         await response.Content.CopyToAsync(fs, token);
