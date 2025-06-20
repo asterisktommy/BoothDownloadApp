@@ -320,10 +320,9 @@ namespace BoothDownloadApp
                     items,
                     fileSelector,
                     DownloadFolderPath,
-                    _settings.RetryCount,
-                    _dbManager,
                     _settings.FavoriteFolders,
                     AutoExtractZip,
+                    _dbManager,
                     new Progress<int>(p => Progress = p),
                     token);
                 MessageBox.Show("ダウンロードが完了しました！", "情報", MessageBoxButton.OK, MessageBoxImage.Information);

@@ -1,10 +1,9 @@
 using System;
 using System.Collections.Generic;
+using System.Linq;
+using System.Diagnostics;
 using System.IO;
 using System.IO.Compression;
-using System.Linq;
-using System.Net.Http;
-using System.Net;
 using System.Threading;
 using System.Threading.Tasks;
 
@@ -15,111 +14,115 @@ namespace BoothDownloadApp
     /// </summary>
     public static class DownloadService
     {
-        public static async Task DownloadItemsAsync(IEnumerable<BoothItem> items, Func<BoothItem.DownloadInfo, bool> fileSelector, string rootPath, int retryCount, DatabaseManager db, string[] favoriteFolders, bool autoExtractZip, IProgress<int>? progress, CancellationToken token)
+        public static async Task DownloadItemsAsync(
+            IEnumerable<BoothItem> items,
+            Func<BoothItem.DownloadInfo, bool> fileSelector,
+            string rootPath,
+            string[] favoriteFolders,
+            bool autoExtractZip,
+            DatabaseManager db,
+            IProgress<int>? progress,
+            CancellationToken token)
         {
-            CookieContainer cookies = CookieStore.Load();
-            using HttpClientHandler handler = new HttpClientHandler { CookieContainer = cookies };
-            using HttpClient httpClient = new HttpClient(handler);
-            httpClient.DefaultRequestHeaders.UserAgent.ParseAdd(
-                "Mozilla/5.0 (Windows NT 10.0; Win64; x64) " +
-                "AppleWebKit/537.36 (KHTML, like Gecko) " +
-                "Chrome/123.0.0.0 Safari/537.36");
-            var fileList = items.SelectMany(i => i.Downloads.Where(fileSelector).Select(d => (item: i, file: d))).ToList();
+            var fileList = items
+                .SelectMany(i => i.Downloads.Where(fileSelector).Select(d => (item: i, file: d)))
+                .ToList();
             int totalFiles = fileList.Count;
-            int downloaded = 0;
+            int processed = 0;
+            string downloadsFolder = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.UserProfile), "Downloads");
 
             foreach (var entry in fileList)
             {
                 token.ThrowIfCancellationRequested();
-                string folder = Path.Combine(rootPath,
+
+                try
+                {
+                    Process.Start(new ProcessStartInfo(entry.file.DownloadLink) { UseShellExecute = true });
+                }
+                catch { }
+
+                string downloadName = entry.file.FileName;
+                string downloadedPath = Path.Combine(downloadsFolder, downloadName);
+                string destFolder = Path.Combine(
+                    rootPath,
                     PathUtils.Sanitize(entry.item.ShopName),
                     PathUtils.Sanitize(entry.item.ProductName));
-                Directory.CreateDirectory(folder);
-                string path = Path.Combine(folder, PathUtils.Sanitize(entry.file.FileName));
-                int attempts = 0;
-                while (true)
+                Directory.CreateDirectory(destFolder);
+                string destPath = Path.Combine(destFolder, PathUtils.Sanitize(downloadName));
+
+                for (int i = 0; i < 60; i++)
                 {
-                    try
+                    token.ThrowIfCancellationRequested();
+                    if (File.Exists(downloadedPath))
                     {
-                        using var request = new HttpRequestMessage(HttpMethod.Get, entry.file.DownloadLink);
-                        if (Uri.TryCreate(entry.item.ItemUrl, UriKind.Absolute, out var referer))
+                        try
                         {
-                            request.Headers.Referrer = referer;
+                            File.Move(downloadedPath, destPath, true);
                         }
-                        using HttpResponseMessage response = await httpClient.SendAsync(request, token);
-                        response.EnsureSuccessStatusCode();
-                        await using FileStream fs = new FileStream(path, FileMode.Create, FileAccess.Write, FileShare.None);
-                        await response.Content.CopyToAsync(fs, token);
-
-                        entry.file.IsDownloaded = true;
-                        entry.file.IsSelected = false;
-                        downloaded++;
-                        progress?.Report((int)((double)downloaded / totalFiles * 100));
-                        db.SaveHistoryItem(PathUtils.Sanitize(entry.file.FileName), entry.file.DownloadLink);
-
-                        int folderIdx = entry.file.FavoriteFolderIndex >= 0 ? entry.file.FavoriteFolderIndex : entry.item.FavoriteFolderIndex;
-                        if (folderIdx >= 0 && folderIdx < favoriteFolders.Length)
+                        catch
                         {
-                            string favRoot = favoriteFolders[folderIdx];
-                            if (!string.IsNullOrWhiteSpace(favRoot))
+                            // move may fail if the browser still has the file locked
+                            try { File.Copy(downloadedPath, destPath, true); File.Delete(downloadedPath); } catch { }
+                        }
+                        break;
+                    }
+                    await Task.Delay(1000, token);
+                }
+
+                int folderIdx = entry.file.FavoriteFolderIndex >= 0 ? entry.file.FavoriteFolderIndex : entry.item.FavoriteFolderIndex;
+                if (folderIdx >= 0 && folderIdx < favoriteFolders.Length)
+                {
+                    string favRoot = favoriteFolders[folderIdx];
+                    if (!string.IsNullOrWhiteSpace(favRoot))
+                    {
+                        string favFolder = Path.Combine(
+                            favRoot,
+                            PathUtils.Sanitize(entry.item.ShopName),
+                            PathUtils.Sanitize(entry.item.ProductName));
+                        Directory.CreateDirectory(favFolder);
+                        string favDest = Path.Combine(favFolder, PathUtils.Sanitize(downloadName));
+                        try
+                        {
+                            File.Copy(destPath, favDest, true);
+                            if (autoExtractZip && favDest.EndsWith(".zip", StringComparison.OrdinalIgnoreCase))
                             {
-                                string favFolder = Path.Combine(favRoot,
-                                    PathUtils.Sanitize(entry.item.ShopName),
-                                    PathUtils.Sanitize(entry.item.ProductName));
-                                Directory.CreateDirectory(favFolder);
-                                string dest = Path.Combine(favFolder, PathUtils.Sanitize(entry.file.FileName));
+                                string extractDir = Path.Combine(Path.GetDirectoryName(favDest)!, Path.GetFileNameWithoutExtension(favDest));
+                                Directory.CreateDirectory(extractDir);
                                 try
                                 {
-                                    File.Copy(path, dest, true);
-                                    if (autoExtractZip && dest.EndsWith(".zip", StringComparison.OrdinalIgnoreCase))
+                                    using var archive = ZipFile.OpenRead(favDest);
+                                    string extractRoot = Path.GetFullPath(extractDir);
+                                    foreach (var zipEntry in archive.Entries)
                                     {
-                                        string extractDir = Path.Combine(Path.GetDirectoryName(dest)!, Path.GetFileNameWithoutExtension(dest));
-                                        Directory.CreateDirectory(extractDir);
-                                        try
+                                        string entryDest = Path.GetFullPath(Path.Combine(extractDir, zipEntry.FullName));
+                                        if (!entryDest.StartsWith(extractRoot, StringComparison.Ordinal))
                                         {
-                                            using ZipArchive archive = ZipFile.OpenRead(dest);
-                                            string extractRoot = Path.GetFullPath(extractDir);
-                                            foreach (var zipEntry in archive.Entries)
-                                            {
-                                                string entryDest = Path.GetFullPath(Path.Combine(extractDir, zipEntry.FullName));
-                                                if (!entryDest.StartsWith(extractRoot, StringComparison.Ordinal))
-                                                {
-                                                    continue;
-                                                }
-                                                if (string.IsNullOrEmpty(zipEntry.Name))
-                                                {
-                                                    Directory.CreateDirectory(entryDest);
-                                                }
-                                                else
-                                                {
-                                                    Directory.CreateDirectory(Path.GetDirectoryName(entryDest)!);
-                                                    zipEntry.ExtractToFile(entryDest, true);
-                                                }
-                                            }
-                                            File.Delete(dest);
+                                            continue;
                                         }
-                                        catch { }
+                                        if (string.IsNullOrEmpty(zipEntry.Name))
+                                        {
+                                            Directory.CreateDirectory(entryDest);
+                                        }
+                                        else
+                                        {
+                                            Directory.CreateDirectory(Path.GetDirectoryName(entryDest)!);
+                                            zipEntry.ExtractToFile(entryDest, true);
+                                        }
                                     }
+                                    File.Delete(favDest);
                                 }
                                 catch { }
                             }
                         }
-                        break;
-                    }
-                    catch (OperationCanceledException)
-                    {
-                        throw;
-                    }
-                    catch
-                    {
-                        attempts++;
-                        if (attempts > retryCount)
-                        {
-                            break;
-                        }
-                        await Task.Delay(1000, token);
+                        catch { }
                     }
                 }
+
+                entry.file.IsDownloaded = true;
+                entry.file.IsSelected = false;
+                processed++;
+                progress?.Report((int)((double)processed / totalFiles * 100));
+                db.SaveHistoryItem(PathUtils.Sanitize(entry.file.FileName), entry.file.DownloadLink);
             }
 
             foreach (var i in items)
