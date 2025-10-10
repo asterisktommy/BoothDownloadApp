@@ -18,6 +18,7 @@ using System.Threading;
 using System.Threading.Tasks;
 using System.Windows.Data;
 using System.Windows.Controls;
+using System.Collections.Specialized;
 
 
 
@@ -32,6 +33,34 @@ namespace BoothDownloadApp
 
         private readonly DatabaseManager _dbManager = new DatabaseManager(Path.Combine(System.AppDomain.CurrentDomain.BaseDirectory, "download_history.db"));
         private readonly Settings _settings = SettingsManager.Load();
+
+        private bool _showSetupGuide = true;
+        public bool ShowSetupGuide
+        {
+            get => _showSetupGuide;
+            private set
+            {
+                if (_showSetupGuide != value)
+                {
+                    _showSetupGuide = value;
+                    OnPropertyChanged();
+                }
+            }
+        }
+
+        private string _nextActionHint = "Booth のライブラリ JSON を読み込んで保存先を設定しましょう。";
+        public string NextActionHint
+        {
+            get => _nextActionHint;
+            private set
+            {
+                if (_nextActionHint != value)
+                {
+                    _nextActionHint = value;
+                    OnPropertyChanged();
+                }
+            }
+        }
 
 
         private bool _showOnlyFavorites;
@@ -176,6 +205,7 @@ namespace BoothDownloadApp
             DataContext = this;
             OpenLinkCommand = new RelayCommand(OpenLink);
             _isDownloading = false;
+            Items.CollectionChanged += Items_CollectionChanged;
             // apply settings
             DownloadFolderPath = string.IsNullOrWhiteSpace(_settings.DownloadPath) ? "C:\\BoothData" : _settings.DownloadPath;
             AutoExtractZip = _settings.AutoExtractZip;
@@ -195,6 +225,7 @@ namespace BoothDownloadApp
             }
             // 起動後に管理用JSONを読み込む
             Loaded += async (_, __) => await LoadManagementDataAsync();
+            UpdateGuidanceState();
         }
 
         /// <summary>
@@ -239,6 +270,8 @@ namespace BoothDownloadApp
             {
                 MessageBox.Show($"管理用JSONの読み込みエラー: {ex.Message}", "エラー", MessageBoxButton.OK, MessageBoxImage.Error);
             }
+
+            UpdateGuidanceState();
         }
 
         /// <summary>
@@ -388,6 +421,8 @@ namespace BoothDownloadApp
             {
                 MessageBox.Show($"処理中にエラーが発生しました: {ex.Message}", "エラー", MessageBoxButton.OK, MessageBoxImage.Error);
             }
+
+            UpdateGuidanceState();
         }
 
 
@@ -417,6 +452,7 @@ namespace BoothDownloadApp
                     _downloadFolderPath = value;
                     OnPropertyChanged();
                     UpdateDownloadStatus();
+                    UpdateGuidanceState();
                 }
             }
         }
@@ -704,6 +740,7 @@ namespace BoothDownloadApp
                 SaveManagementData();
             }
             UpdateDownloadStatus();
+            UpdateGuidanceState();
         }
 
         private void OpenFavoriteFolderSetting(object sender, RoutedEventArgs e)
@@ -728,6 +765,7 @@ namespace BoothDownloadApp
                 {
                     SaveManagementData();
                     UpdateDownloadStatus();
+                    UpdateGuidanceState();
                 }
             }
             else
@@ -751,6 +789,30 @@ namespace BoothDownloadApp
                     _favoriteTags.Add(t);
                 }
                 ApplyFilters();
+            }
+        }
+
+        private void Items_CollectionChanged(object? sender, NotifyCollectionChangedEventArgs e)
+        {
+            UpdateGuidanceState();
+        }
+
+        private void UpdateGuidanceState()
+        {
+            bool hasItems = Items.Count > 0;
+            ShowSetupGuide = !hasItems;
+
+            if (!hasItems)
+            {
+                NextActionHint = "① JSON を読み込み、② 保存先を指定してダウンロードの準備をしましょう。";
+            }
+            else if (!Directory.Exists(DownloadFolderPath))
+            {
+                NextActionHint = "保存先フォルダーが存在しません。📂選択 ボタンから保存先を設定してください。";
+            }
+            else
+            {
+                NextActionHint = "ダウンロードしたいアイテムをチェックし、⬇️ ダウンロード開始 を押してください。";
             }
         }
 
