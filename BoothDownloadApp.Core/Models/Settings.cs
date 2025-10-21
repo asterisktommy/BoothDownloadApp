@@ -5,6 +5,7 @@ namespace BoothDownloadApp
     public class Settings
     {
         public string DownloadPath { get; set; } = string.Empty;
+        public List<string> DownloadFolderHistory { get; set; } = new List<string>();
         public int RetryCount { get; set; }
         public List<string> FavoriteTags { get; set; } = new List<string>();
         public string[] FavoriteFolders { get; set; } = new string[10];

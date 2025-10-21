@@ -74,6 +74,10 @@ namespace BoothDownloadApp
                     _showOnlyFavorites = value;
                     OnPropertyChanged();
                     ApplyFilters();
+                    if (!_applyingPreset)
+                    {
+                        SetCustomPreset();
+                    }
                 }
             }
         }
@@ -89,6 +93,10 @@ namespace BoothDownloadApp
                     _showOnlyNotDownloaded = value;
                     OnPropertyChanged();
                     ApplyFilters();
+                    if (!_applyingPreset)
+                    {
+                        SetCustomPreset();
+                    }
                 }
             }
         }
@@ -104,6 +112,10 @@ namespace BoothDownloadApp
                     _showOnlyUpdates = value;
                     OnPropertyChanged();
                     ApplyFilters();
+                    if (!_applyingPreset)
+                    {
+                        SetCustomPreset();
+                    }
                 }
             }
         }
@@ -129,8 +141,29 @@ namespace BoothDownloadApp
         public ObservableCollection<string> FavoriteTags => _favoriteTags;
 
         public ObservableCollection<string> FavoriteFolderNames { get; } = new ObservableCollection<string>();
+        public ObservableCollection<FavoriteFolderTab> FavoriteFolderTabs { get; } = new ObservableCollection<FavoriteFolderTab>();
 
-        public ObservableCollection<bool> FavoriteFolderUsed { get; } = new ObservableCollection<bool>(Enumerable.Repeat(false, 10));
+        public ObservableCollection<string> DownloadFolderHistory { get; } = new ObservableCollection<string>();
+
+        public ObservableCollection<FilterPreset> FilterPresets { get; } = new ObservableCollection<FilterPreset>();
+
+        private FilterPreset? _selectedFilterPreset;
+        public FilterPreset? SelectedFilterPreset
+        {
+            get => _selectedFilterPreset;
+            set
+            {
+                if (_selectedFilterPreset != value)
+                {
+                    _selectedFilterPreset = value;
+                    OnPropertyChanged();
+                    if (!_applyingPreset && value != null && !value.IsCustom)
+                    {
+                        ApplyFilterPreset(value);
+                    }
+                }
+            }
+        }
 
         private string? _selectedTag = "All";
         public string? SelectedTag
@@ -143,6 +176,10 @@ namespace BoothDownloadApp
                     _selectedTag = value;
                     OnPropertyChanged();
                     ApplyFilters();
+                    if (!_applyingPreset)
+                    {
+                        SetCustomPreset();
+                    }
                 }
             }
         }
@@ -158,21 +195,42 @@ namespace BoothDownloadApp
                     _searchQuery = value;
                     OnPropertyChanged();
                     ApplyFilters();
+                    if (!_applyingPreset)
+                    {
+                        SetCustomPreset();
+                    }
                 }
             }
         }
 
-        private int _selectedFavoriteFolderIndex = 0; // "All" tab by default
-        public int SelectedFavoriteFolderIndex
+        private FavoriteFolderTab? _selectedFavoriteFolderTab;
+        public FavoriteFolderTab? SelectedFavoriteFolderTab
         {
-            get => _selectedFavoriteFolderIndex;
+            get => _selectedFavoriteFolderTab;
             set
             {
-                if (_selectedFavoriteFolderIndex != value)
+                if (value == null)
                 {
-                    _selectedFavoriteFolderIndex = value;
+                    if (_selectedFavoriteFolderTab != null)
+                    {
+                        _selectedFavoriteFolderTab = null;
+                        OnPropertyChanged();
+                        ApplyFilters();
+                        if (!_applyingPreset)
+                        {
+                            SetCustomPreset();
+                        }
+                    }
+                }
+                else if (_selectedFavoriteFolderTab == null || _selectedFavoriteFolderTab.FilterIndex != value.FilterIndex)
+                {
+                    _selectedFavoriteFolderTab = value;
                     OnPropertyChanged();
                     ApplyFilters();
+                    if (!_applyingPreset)
+                    {
+                        SetCustomPreset();
+                    }
                 }
             }
         }
@@ -193,6 +251,8 @@ namespace BoothDownloadApp
 
         private CancellationTokenSource? _cts;
         private bool _isDownloading;
+        private bool _applyingPreset;
+        private int? _pendingFavoriteFolderFilterIndex;
 
         public ICommand OpenLinkCommand { get; }
 
@@ -206,7 +266,21 @@ namespace BoothDownloadApp
             OpenLinkCommand = new RelayCommand(OpenLink);
             _isDownloading = false;
             Items.CollectionChanged += Items_CollectionChanged;
+            FavoriteFolderNames.CollectionChanged += (_, __) => UpdateFavoriteFolderTabs();
+            InitializeFilterPresets();
+            _selectedFilterPreset = FilterPresets.FirstOrDefault();
+            OnPropertyChanged(nameof(SelectedFilterPreset));
             // apply settings
+            if (_settings.DownloadFolderHistory != null)
+            {
+                foreach (var path in _settings.DownloadFolderHistory.Where(p => !string.IsNullOrWhiteSpace(p)))
+                {
+                    if (!DownloadFolderHistory.Contains(path))
+                    {
+                        DownloadFolderHistory.Add(path);
+                    }
+                }
+            }
             DownloadFolderPath = string.IsNullOrWhiteSpace(_settings.DownloadPath) ? "C:\\BoothData" : _settings.DownloadPath;
             AutoExtractZip = _settings.AutoExtractZip;
             if (_settings.FavoriteTags != null)
@@ -223,6 +297,7 @@ namespace BoothDownloadApp
                     FavoriteFolderNames.Add(n);
                 }
             }
+            UpdateFavoriteFolderTabs();
             // 起動後に管理用JSONを読み込む
             Loaded += async (_, __) => await LoadManagementDataAsync();
             UpdateGuidanceState();
@@ -288,6 +363,7 @@ namespace BoothDownloadApp
         {
             SaveManagementData();
             _settings.DownloadPath = DownloadFolderPath;
+            _settings.DownloadFolderHistory = DownloadFolderHistory.ToList();
             _settings.FavoriteTags = _favoriteTags.ToList();
             _settings.FavoriteFolders = FavoriteFolderNames.ToArray();
             _settings.AutoExtractZip = AutoExtractZip;
@@ -451,6 +527,7 @@ namespace BoothDownloadApp
                 {
                     _downloadFolderPath = value;
                     OnPropertyChanged();
+                    UpdateDownloadFolderHistory(value);
                     UpdateDownloadStatus();
                     UpdateGuidanceState();
                 }
@@ -475,6 +552,31 @@ namespace BoothDownloadApp
             }
         }
 
+        private void UpdateDownloadFolderHistory(string? path)
+        {
+            if (string.IsNullOrWhiteSpace(path))
+            {
+                return;
+            }
+
+            int existingIndex = DownloadFolderHistory.IndexOf(path);
+            if (existingIndex > 0)
+            {
+                DownloadFolderHistory.RemoveAt(existingIndex);
+            }
+            if (existingIndex != 0)
+            {
+                DownloadFolderHistory.Insert(0, path);
+            }
+
+            while (DownloadFolderHistory.Count > 10)
+            {
+                DownloadFolderHistory.RemoveAt(DownloadFolderHistory.Count - 1);
+            }
+
+            _settings.DownloadFolderHistory = DownloadFolderHistory.ToList();
+        }
+
         /// <summary>
         /// ダウンロードフォルダをエクスプローラーで開く
         /// </summary>
@@ -497,6 +599,21 @@ namespace BoothDownloadApp
             }
         }
 
+        private void CopyDownloadFolderPath(object sender, RoutedEventArgs e)
+        {
+            try
+            {
+                if (!string.IsNullOrWhiteSpace(DownloadFolderPath))
+                {
+                    Clipboard.SetText(DownloadFolderPath);
+                }
+            }
+            catch (Exception ex)
+            {
+                MessageBox.Show($"パスをコピーできませんでした: {ex.Message}", "エラー", MessageBoxButton.OK, MessageBoxImage.Error);
+            }
+        }
+
         /// <summary>
         /// 全アイテムのダウンロード済み状態を更新する
         /// </summary>
@@ -512,6 +629,18 @@ namespace BoothDownloadApp
                         PathUtils.Sanitize(item.ProductName),
                         PathUtils.Sanitize(download.FileName));
                     download.IsDownloaded = File.Exists(path);
+                    if (!download.IsDownloaded && AutoExtractZip && download.FileName.EndsWith(".zip", StringComparison.OrdinalIgnoreCase))
+                    {
+                        string extractDir = Path.Combine(
+                            DownloadFolderPath,
+                            PathUtils.Sanitize(item.ShopName),
+                            PathUtils.Sanitize(item.ProductName),
+                            Path.GetFileNameWithoutExtension(PathUtils.Sanitize(download.FileName)));
+                        if (Directory.Exists(extractDir))
+                        {
+                            download.IsDownloaded = Directory.EnumerateFileSystemEntries(extractDir).Any();
+                        }
+                    }
                 }
                 item.IsDownloaded = item.Downloads.All(d => d.IsDownloaded);
 
@@ -576,16 +705,130 @@ namespace BoothDownloadApp
                 }
             }
             UpdateAvailableTags();
-            UpdateFavoriteFolderUsage();
+            UpdateFavoriteFolderTabs();
             ApplyFilters();
         }
 
-        private void UpdateFavoriteFolderUsage()
+        private void UpdateFavoriteFolderTabs()
         {
-            for (int i = 0; i < FavoriteFolderUsed.Count; i++)
+            int desiredIndex = _pendingFavoriteFolderFilterIndex ?? _selectedFavoriteFolderTab?.FilterIndex ?? -1;
+
+            FavoriteFolderTabs.Clear();
+            FavoriteFolderTabs.Add(new FavoriteFolderTab("All", -1));
+            FavoriteFolderTabs.Add(new FavoriteFolderTab("未選択", -2));
+
+            for (int i = 0; i < FavoriteFolderNames.Count; i++)
             {
-                bool used = Items.Any(item => item.FavoriteFolderIndex == i);
-                FavoriteFolderUsed[i] = used;
+                if (Items.Any(item => item.FavoriteFolderIndex == i))
+                {
+                    FavoriteFolderTabs.Add(new FavoriteFolderTab(FavoriteFolderNames[i], i));
+                }
+            }
+
+            FavoriteFolderTab? target = FavoriteFolderTabs.FirstOrDefault(t => t.FilterIndex == desiredIndex)
+                                       ?? FavoriteFolderTabs.FirstOrDefault();
+
+            if (target != null)
+            {
+                _pendingFavoriteFolderFilterIndex = null;
+                if (_selectedFavoriteFolderTab == null || _selectedFavoriteFolderTab.FilterIndex != target.FilterIndex)
+                {
+                    _applyingPreset = true;
+                    SelectedFavoriteFolderTab = target;
+                    _applyingPreset = false;
+                }
+            }
+            else
+            {
+                _selectedFavoriteFolderTab = null;
+                OnPropertyChanged(nameof(SelectedFavoriteFolderTab));
+            }
+        }
+
+        private void InitializeFilterPresets()
+        {
+            FilterPresets.Clear();
+            FilterPresets.Add(FilterPreset.CreateCustom());
+            FilterPresets.Add(FilterPreset.Create(
+                "未DL + 更新あり",
+                showOnlyNotDownloaded: true,
+                showOnlyUpdates: true,
+                showOnlyFavorites: false,
+                tag: "All",
+                favoriteFolderFilterIndex: -1,
+                resetSearch: true));
+            FilterPresets.Add(FilterPreset.Create(
+                "お気に入りタグ + 未DL",
+                showOnlyNotDownloaded: true,
+                showOnlyUpdates: false,
+                showOnlyFavorites: true,
+                tag: "All",
+                favoriteFolderFilterIndex: -1,
+                resetSearch: true));
+        }
+
+        private void ApplyFilterPreset(FilterPreset preset)
+        {
+            _applyingPreset = true;
+            try
+            {
+                if (preset.ShowOnlyNotDownloaded.HasValue)
+                {
+                    ShowOnlyNotDownloaded = preset.ShowOnlyNotDownloaded.Value;
+                }
+                if (preset.ShowOnlyUpdates.HasValue)
+                {
+                    ShowOnlyUpdates = preset.ShowOnlyUpdates.Value;
+                }
+                if (preset.ShowOnlyFavorites.HasValue)
+                {
+                    ShowOnlyFavorites = preset.ShowOnlyFavorites.Value;
+                }
+                if (preset.Tag != null)
+                {
+                    SelectedTag = preset.Tag;
+                }
+                if (preset.FavoriteFolderFilterIndex.HasValue)
+                {
+                    SetFavoriteFolderFilter(preset.FavoriteFolderFilterIndex.Value);
+                }
+                if (preset.ResetSearch)
+                {
+                    SearchQuery = string.Empty;
+                }
+            }
+            finally
+            {
+                _applyingPreset = false;
+            }
+            ApplyFilters();
+        }
+
+        private void SetCustomPreset()
+        {
+            if (FilterPresets.Count == 0)
+            {
+                return;
+            }
+
+            var custom = FilterPresets.First();
+            if (!ReferenceEquals(_selectedFilterPreset, custom))
+            {
+                _selectedFilterPreset = custom;
+                OnPropertyChanged(nameof(SelectedFilterPreset));
+            }
+        }
+
+        private void SetFavoriteFolderFilter(int filterIndex)
+        {
+            var tab = FavoriteFolderTabs.FirstOrDefault(t => t.FilterIndex == filterIndex);
+            if (tab != null)
+            {
+                SelectedFavoriteFolderTab = tab;
+            }
+            else
+            {
+                _pendingFavoriteFolderFilterIndex = filterIndex;
             }
         }
 
@@ -651,19 +894,7 @@ namespace BoothDownloadApp
         {
             if (ItemsView == null) return;
 
-            int filterIndex;
-            if (SelectedFavoriteFolderIndex == 0)
-            {
-                filterIndex = -1; // All
-            }
-            else if (SelectedFavoriteFolderIndex == 1)
-            {
-                filterIndex = -2; // Unassigned only
-            }
-            else
-            {
-                filterIndex = SelectedFavoriteFolderIndex - 2;
-            }
+            int filterIndex = SelectedFavoriteFolderTab?.FilterIndex ?? -1;
 
             ItemsView.Filter = obj =>
             {
@@ -795,6 +1026,7 @@ namespace BoothDownloadApp
         private void Items_CollectionChanged(object? sender, NotifyCollectionChangedEventArgs e)
         {
             UpdateGuidanceState();
+            UpdateFavoriteFolderTabs();
         }
 
         private void UpdateGuidanceState()
@@ -813,6 +1045,49 @@ namespace BoothDownloadApp
             else
             {
                 NextActionHint = "ダウンロードしたいアイテムをチェックし、⬇️ ダウンロード開始 を押してください。";
+            }
+        }
+
+        public class FavoriteFolderTab
+        {
+            public FavoriteFolderTab(string header, int filterIndex)
+            {
+                Header = header;
+                FilterIndex = filterIndex;
+            }
+
+            public string Header { get; }
+            public int FilterIndex { get; }
+        }
+
+        public class FilterPreset
+        {
+            private FilterPreset(string name, bool isCustom, bool? showOnlyNotDownloaded, bool? showOnlyUpdates, bool? showOnlyFavorites, string? tag, int? favoriteFolderFilterIndex, bool resetSearch)
+            {
+                Name = name;
+                IsCustom = isCustom;
+                ShowOnlyNotDownloaded = showOnlyNotDownloaded;
+                ShowOnlyUpdates = showOnlyUpdates;
+                ShowOnlyFavorites = showOnlyFavorites;
+                Tag = tag;
+                FavoriteFolderFilterIndex = favoriteFolderFilterIndex;
+                ResetSearch = resetSearch;
+            }
+
+            public string Name { get; }
+            public bool IsCustom { get; }
+            public bool? ShowOnlyNotDownloaded { get; }
+            public bool? ShowOnlyUpdates { get; }
+            public bool? ShowOnlyFavorites { get; }
+            public string? Tag { get; }
+            public int? FavoriteFolderFilterIndex { get; }
+            public bool ResetSearch { get; }
+
+            public static FilterPreset CreateCustom() => new FilterPreset("カスタム", true, null, null, null, null, null, false);
+
+            public static FilterPreset Create(string name, bool? showOnlyNotDownloaded = null, bool? showOnlyUpdates = null, bool? showOnlyFavorites = null, string? tag = null, int? favoriteFolderFilterIndex = null, bool resetSearch = false)
+            {
+                return new FilterPreset(name, false, showOnlyNotDownloaded, showOnlyUpdates, showOnlyFavorites, tag, favoriteFolderFilterIndex, resetSearch);
             }
         }
 
