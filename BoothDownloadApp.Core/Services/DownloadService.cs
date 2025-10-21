@@ -42,13 +42,15 @@ namespace BoothDownloadApp
                 catch { }
 
                 string downloadName = entry.file.FileName;
+                string sanitizedName = PathUtils.Sanitize(downloadName);
                 string downloadedPath = Path.Combine(downloadsFolder, downloadName);
                 string destFolder = Path.Combine(
                     rootPath,
                     PathUtils.Sanitize(entry.item.ShopName),
                     PathUtils.Sanitize(entry.item.ProductName));
                 Directory.CreateDirectory(destFolder);
-                string destPath = Path.Combine(destFolder, PathUtils.Sanitize(downloadName));
+                string destPath = Path.Combine(destFolder, sanitizedName);
+                bool isZip = sanitizedName.EndsWith(".zip", StringComparison.OrdinalIgnoreCase);
 
                 for (int i = 0; i < 60; i++)
                 {
@@ -80,42 +82,26 @@ namespace BoothDownloadApp
                             PathUtils.Sanitize(entry.item.ShopName),
                             PathUtils.Sanitize(entry.item.ProductName));
                         Directory.CreateDirectory(favFolder);
-                        string favDest = Path.Combine(favFolder, PathUtils.Sanitize(downloadName));
+                        string favDest = Path.Combine(favFolder, sanitizedName);
                         try
                         {
                             File.Copy(destPath, favDest, true);
-                            if (autoExtractZip && favDest.EndsWith(".zip", StringComparison.OrdinalIgnoreCase))
+                            if (autoExtractZip && isZip)
                             {
-                                string extractDir = Path.Combine(Path.GetDirectoryName(favDest)!, Path.GetFileNameWithoutExtension(favDest));
-                                Directory.CreateDirectory(extractDir);
-                                try
-                                {
-                                    using var archive = ZipFile.OpenRead(favDest);
-                                    string extractRoot = Path.GetFullPath(extractDir);
-                                    foreach (var zipEntry in archive.Entries)
-                                    {
-                                        string entryDest = Path.GetFullPath(Path.Combine(extractDir, zipEntry.FullName));
-                                        if (!entryDest.StartsWith(extractRoot, StringComparison.Ordinal))
-                                        {
-                                            continue;
-                                        }
-                                        if (string.IsNullOrEmpty(zipEntry.Name))
-                                        {
-                                            Directory.CreateDirectory(entryDest);
-                                        }
-                                        else
-                                        {
-                                            Directory.CreateDirectory(Path.GetDirectoryName(entryDest)!);
-                                            zipEntry.ExtractToFile(entryDest, true);
-                                        }
-                                    }
-                                    File.Delete(favDest);
-                                }
-                                catch { }
+                                string favExtractDir = Path.Combine(
+                                    favFolder,
+                                    Path.GetFileNameWithoutExtension(sanitizedName));
+                                ExtractZipSafely(favDest, favExtractDir);
                             }
                         }
                         catch { }
                     }
+                }
+
+                if (autoExtractZip && isZip)
+                {
+                    string extractDir = Path.Combine(destFolder, Path.GetFileNameWithoutExtension(sanitizedName));
+                    ExtractZipSafely(destPath, extractDir);
                 }
 
                 entry.file.IsDownloaded = true;
@@ -129,6 +115,45 @@ namespace BoothDownloadApp
             {
                 i.IsDownloaded = i.Downloads.All(d => d.IsDownloaded);
                 i.IsSelected = false;
+            }
+        }
+
+        private static void ExtractZipSafely(string zipPath, string extractDir)
+        {
+            try
+            {
+                if (!File.Exists(zipPath))
+                {
+                    return;
+                }
+
+                Directory.CreateDirectory(extractDir);
+                string extractRoot = Path.GetFullPath(extractDir);
+                using var archive = ZipFile.OpenRead(zipPath);
+                foreach (var zipEntry in archive.Entries)
+                {
+                    string destinationPath = Path.GetFullPath(Path.Combine(extractDir, zipEntry.FullName));
+                    if (!destinationPath.StartsWith(extractRoot, StringComparison.Ordinal))
+                    {
+                        continue;
+                    }
+
+                    if (string.IsNullOrEmpty(zipEntry.Name))
+                    {
+                        Directory.CreateDirectory(destinationPath);
+                    }
+                    else
+                    {
+                        Directory.CreateDirectory(Path.GetDirectoryName(destinationPath)!);
+                        zipEntry.ExtractToFile(destinationPath, true);
+                    }
+                }
+
+                File.Delete(zipPath);
+            }
+            catch
+            {
+                // ignore extraction errors to avoid interrupting the download workflow
             }
         }
     }

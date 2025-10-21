@@ -24,6 +24,7 @@ namespace BoothDownloadApp
                         {
                             settings.FavoriteFolders = DefaultFolders();
                         }
+                        settings.DownloadFolderHistory ??= new List<string>();
                         return settings;
                     }
                 }
@@ -34,6 +35,7 @@ namespace BoothDownloadApp
             }
             return new Settings {
                 DownloadPath = "C:\\BoothData",
+                DownloadFolderHistory = new List<string>(),
                 RetryCount = 3,
                 FavoriteTags = new List<string>(),
                 FavoriteFolders = DefaultFolders(),
