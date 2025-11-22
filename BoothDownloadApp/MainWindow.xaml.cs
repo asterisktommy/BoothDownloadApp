@@ -7,7 +7,6 @@ using System.Text.Json;
 using System.Text.Json.Serialization;
 using System.Windows;
 using MessageBox = System.Windows.MessageBox; // WPF の MessageBox を明示的に指定
-using System.Windows.Forms;
 using OpenFileDialog = Microsoft.Win32.OpenFileDialog;
 using Microsoft.WindowsAPICodePack.Dialogs;
 using System.Net.Http;
